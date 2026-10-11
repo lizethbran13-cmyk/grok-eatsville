@@ -29,7 +29,7 @@ function shell(R, W, D, o) {
   const fm = floorMat(o.floor || 'tile', o.floorCol || trim); const fl = new THREE.Mesh(new THREE.PlaneGeometry(W, D), fm); fm.map.repeat.set(W / 2.4, D / 2.4); fl.rotation.x = -PI / 2; fl.position.set(IX, 0.01, 0); fl.receiveShadow = true; R.grp.add(fl);
   x.p('m', P.rboxS, 0x9ca3af, 0, -0.1, 0, 0, 0, 0, W + 1, 0.2, D + 1);
   // back + side walls (full), wainscot, baseboard, crown
-  x.p('w', P.rboxS, wall, 0, H / 2, -D / 2 - 0.15, 0, 0, 0, W + 0.6, H, 0.3); for (const s of [-1, 1]) x.p('w', P.rboxS, wall, s * (W / 2 + 0.15), H / 2, 0, 0, 0, 0, 0.3, H, D + 0.6);
+  x.p('w', P.rboxS, wall, 0, H / 2 + 1.3, -D / 2 - 0.15, 0, 0, 0, W + 0.6, H + 2.6, 0.3); for (const s of [-1, 1]) x.p('w', P.rboxS, wall, s * (W / 2 + 0.15), H + 1.3, -D / 2 + 1.2, 0, 0, 0, 0.3, 2.6, 2.4); for (const s of [-1, 1]) x.p('w', P.rboxS, wall, s * (W / 2 + 0.15), H / 2, 0, 0, 0, 0, 0.3, H, D + 0.6);
   x.p('w', P.rboxS, o.wains || trim, 0, 0.6, -D / 2 + 0.02, 0, 0, 0, W, 1.2, 0.06); for (const s of [-1, 1]) x.p('w', P.rboxS, o.wains || trim, s * (W / 2 - 0.02), 0.6, 0, 0, 0, 0, 0.06, 1.2, D);
   x.p('g', P.rboxS, 0xffffff, 0, 1.22, -D / 2 + 0.05, 0, 0, 0, W, 0.06, 0.1); for (const s of [-1, 1]) x.p('g', P.rboxS, 0xffffff, s * (W / 2 - 0.05), 1.22, 0, 0, 0, 0, 0.1, 0.06, D);
   x.p('g', P.rboxS, 0xffffff, 0, H - 0.1, -D / 2 + 0.06, 0, 0, 0, W, 0.2, 0.15); for (const s of [-1, 1]) x.p('g', P.rboxS, 0xffffff, s * (W / 2 - 0.06), H - 0.1, 0, 0, 0, 0, 0.15, 0.2, D);
@@ -90,6 +90,11 @@ function restaurant(R, br) {
     const seats = seatsFor(br.level || 0); R.seats = seats;
     REST.tables.slice(0, [4, 6, 8][Math.min(2, br.level || 0)]).forEach(([tx, tz]) => { put(R, 'table', tx, tz, 0, { col: 0xffffff, cloth: brand ? null : (th.id === 'forest' ? 0xfef3c7 : null) }); put(R, 'chair', tx - 0.95, tz, PI / 2, { col: seat }); put(R, 'chair', tx + 0.95, tz, -PI / 2, { col: seat }); put(R, 'pendant', tx, tz, 0, { col: trim, nocol: true }); });
     R.tableSpots = REST.tables;
+    const flowers = [0xff6b9a, 0xfacc15, 0xa78bfa, 0xf97316]; REST.tables.slice(0, [4, 6, 8][Math.min(2, br.level || 0)]).forEach(([tx, tz], i) => put(R, 'tableTop', tx, tz - 0.05, (i % 3) * 0.6, { flower: flowers[i % 4], vase: brand ? trim : 0x93c5fd }));
+    put(R, 'cakeDome', 3.4, REST.counterZ, 0, { cake: brand ? 0xfde68a : 0xf9a8d4 }); put(R, 'tipJar', 5.9, REST.counterZ, 0); put(R, 'cakeDome', -6.8, REST.counterZ, 0.4, { cake: 0x92400e });
+    { const pr = new XB(R.B, IX - 2, 2.9, REST.stZ - 0.15, 0); PR.potRack(pr, { w: 9 }); }
+    put(R, 'easel', REST.doorX + 2.3, D / 2 - 1.3, -0.3, { t1: 'TODAY:', t2: br.special && DISH[br.special] ? DISH[br.special].n.toUpperCase().slice(0, 12) : 'SMILES!' });
+    put(R, 'bench', REST.doorX - 6.3, D / 2 - 0.75, PI); put(R, 'plant', REST.doorX - 1.6, D / 2 - 0.6, 0, { pot: trim }); put(R, 'plant', REST.doorX + 1.6, D / 2 - 0.6, 0, { pot: trim });
     // office corner
     put(R, 'desk', REST.office[0], REST.office[1] + 0.2, PI / 2, { screen: trim }); spot(R, 'office', REST.office[0] + 1.0, REST.office[1] + 0.2, br.brand ? 'Clock in' : 'Office', 'office', {}, 1.4);
     put(R, 'plant', -10.2, 4.5, 0); put(R, 'plant', 10.2, 6.6, 0); put(R, 'coatRack', 10.3, 5.2, 0); put(R, 'waterCooler', -10.3, 0.6, 0);

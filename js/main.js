@@ -22,9 +22,9 @@ import { Net } from './net.js';
 const PI = Math.PI;
 export const G = { state: 'boot', where: 'town', room: null, sim: null, bid: null, yaw: 0, camT: 0, t: 0, lastHour: -1, carState: null, carModel: null, driving: false, deliv: null, remote: {}, paused: false };
 const ENV = {
-  day: { sunDir: [0.5, 0.85, 0.35], skyTop: 0x2f86e0, skyMid: 0x9fd4ff, skyBot: 0xd8f0ff, fog: 0xc4e6ff, fogD: 0.0042, sunI: 2.9, sunColor: 0xfff4e0, hemiSky: 0xd8ecff, hemiGround: 0x6b8a4a, hemiI: 0.65, exposure: 1.0, envI: 0.9, sunDisc: 1, bloomT: 1.05, bloomS: 0.45 },
-  dusk: { sunDir: [0.85, 0.28, 0.25], skyTop: 0x433a8f, skyMid: 0xff9e6e, skyBot: 0xffd2a0, fog: 0xffc6a0, fogD: 0.0045, sunI: 2.1, sunColor: 0xffb070, hemiSky: 0xffc8a8, hemiGround: 0x5a4a6a, hemiI: 0.55, exposure: 1.0, envI: 0.75, sunDisc: 1, bloomT: 0.95, bloomS: 0.55 },
-  night: { sunDir: [-0.35, 0.75, 0.4], skyTop: 0x0a1030, skyMid: 0x1b2a5c, skyBot: 0x2c3c70, fog: 0x1e2c50, fogD: 0.0045, sunI: 0.7, sunColor: 0xa8bcff, hemiSky: 0x5a6aa8, hemiGround: 0x2a2a40, hemiI: 0.45, exposure: 1.05, envI: 0.45, stars: 1, moon: 1, bloomT: 0.8, bloomS: 0.65 },
+  day: { sunDir: [0.5, 0.85, 0.35], skyTop: 0x1f74d8, skyMid: 0x7cc2ff, skyBot: 0xbfe4ff, fog: 0xa8d4ff, fogD: 0.0026, sunI: 3.0, sunColor: 0xfff2dc, hemiSky: 0xcfe6ff, hemiGround: 0x5f7f3e, hemiI: 0.5, exposure: 0.95, envI: 0.75, sunDisc: 1, bloomT: 1.2, bloomS: 0.3 },
+  dusk: { sunDir: [0.85, 0.28, 0.25], skyTop: 0x433a8f, skyMid: 0xff9e6e, skyBot: 0xffd2a0, fog: 0xffb890, fogD: 0.003, sunI: 2.1, sunColor: 0xffb070, hemiSky: 0xffc8a8, hemiGround: 0x5a4a6a, hemiI: 0.55, exposure: 1.0, envI: 0.75, sunDisc: 1, bloomT: 0.95, bloomS: 0.55 },
+  night: { sunDir: [-0.35, 0.75, 0.4], skyTop: 0x0a1030, skyMid: 0x1b2a5c, skyBot: 0x2c3c70, fog: 0x1e2c50, fogD: 0.0032, sunI: 0.7, sunColor: 0xa8bcff, hemiSky: 0x5a6aa8, hemiGround: 0x2a2a40, hemiI: 0.45, exposure: 1.05, envI: 0.45, stars: 1, moon: 1, bloomT: 0.8, bloomS: 0.65 },
   room: { sunDir: [0.3, 1, 0.55], skyTop: 0x3b2f4a, skyMid: 0x5a4660, skyBot: 0x6b5468, fog: 0x4a3c55, fogD: 0.0012, sunI: 1.9, sunColor: 0xfff1dc, hemiSky: 0xfff6ea, hemiGround: 0x8a7a6a, hemiI: 0.6, exposure: 0.95, envI: 0.6, envLight: 0xffffff, bloomT: 1.1, bloomS: 0.35 },
 };
 let curEnv = null; function env(k) { if (curEnv === k) return; curEnv = k; setEnvironment(ENV[k]); }
@@ -323,7 +323,7 @@ function stepRoom(dt, mv) {
   P.model.visible = true; P.model.position.set(P.x, 0, P.z); P.model.rotation.y = P.ry; animPerson(P.model, dt, { speed: P.sp, carry: !!P.carry });
   for (const n of R.npcs) { if (n.m.userData.rig) animPerson(n.m, dt, { speed: 0, wave: n.anim === 'wave' && Math.sin(G.t * 0.7 + n.x) > 0.6, work: n.anim === 'work', angry: n.anim === 'angry' }); else animAny(n.m, dt, 0, {}); }
   // camera: dollhouse view from the open front
-  const lx = P.x - IX; const tx = IX + clamp(lx, -R.W / 2 + 4.5, R.W / 2 - 4.5), tz = clamp(P.z, -R.D / 2 + 3.5, R.D / 2 - 3);
+  const lx = P.x - IX; const tx = IX + clamp(lx, -R.W / 2 + 4.5, R.W / 2 - 4.5), tz = clamp(P.z, -R.D / 2 + 2.6, R.D / 2 - 2.4);
   const cam = E.camera; const cx = tx, cy = 7.4, cz = tz + 7.2; if (G.snapRoom !== R) { cam.position.set(cx, cy, cz); G.snapRoom = R; } cam.position.x = damp(cam.position.x, cx, 6, dt); cam.position.y = damp(cam.position.y, cy, 6, dt); cam.position.z = damp(cam.position.z, cz, 6, dt);
   cam.lookAt(tx, 1.0, tz - 1.3); cam.fov = E.baseFov - 2; cam.updateProjectionMatrix(); followShadow(tx, 0, tz);
   if (G.deliv && G.deliv.bag && R.bid === G.deliv.house) {} }
