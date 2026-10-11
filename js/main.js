@@ -16,9 +16,12 @@ import { initDecorCull, decorCull, makeVisTest, warmShaders } from './perf.js';
 import { initFx, burst, stepFx, clearFx, floatText, stepFloats, clearFloats } from './fx.js';
 import { S, setS, persist, loadSave, newGame, newDay, ensureToday, autopilotHour, offsiteInspection, branchFor, branchKey, EV, isOpen, fmtTime, MIN_PER_SEC, BEDTIME, DAY_START, rankUp, news } from './empire.js';
 import { RestSim } from './sim.js';
+import { ROADS as ROADS_ } from './data.js';
 import { BLD, BUILDINGS, OUTFITS, CAR, CAREER, LOTS, RIVALS } from './data.js';
 import * as U from './ui.js';
 import { Net } from './net.js';
+import { MB, toGroup, XB } from './kit.js';
+import { P as GP } from './geo.js';
 const PI = Math.PI;
 export const G = { state: 'boot', where: 'town', room: null, sim: null, bid: null, yaw: 0, camT: 0, t: 0, lastHour: -1, carState: null, carModel: null, driving: false, deliv: null, remote: {}, paused: false };
 const ENV = {
@@ -39,6 +42,7 @@ async function boot() {
   G.pModel = new THREE.Group(); E.scene.add(G.pModel);
   G.arrow = makeArrow(); E.scene.add(G.arrow); G.arrow.visible = false;
   G.signGrp = new THREE.Group(); E.scene.add(G.signGrp); G.trafficInit = false;
+  buildSpatulas();
   env('day'); E.camera.position.set(-30, 40, -10); E.camera.lookAt(0, 0, 0);
   warmShaders(E.renderer, E.scene, E.camera); step(100, 'Open for business!');
   setTimeout(() => $('loading').classList.add('gone'), 200);
@@ -79,6 +83,16 @@ function respawnCar(near, atHome) { const def = CAR[S.car] || CAR.hatch; const o
   if (near && G.where === 'town' && !atHome && !old) { G.carState.x = P.x + 3; G.carState.z = P.z; }
   if (near && G.bid === 'cars') { const d = T.doors.find((x) => x.bid === 'cars'); G.carState.x = d.x + 6; G.carState.z = d.z + 4.5; G.carState.ry = PI / 2; }
   if (G.carModel) E.scene.remove(G.carModel); G.carModel = makeCar(def.kind, def.col); E.scene.add(G.carModel); poseCar(G.carModel, G.carState, 0); G.carModel.visible = G.where === 'town'; }
+// ---------------- hidden Golden Spatulas (10 collectibles, great in Explore mode) ----------------
+function buildSpatulas() { G.spats = []; const b = MB(); const x = new XB(b); x.p('g', GP.cyl, 0x8b5a2b, 0, -0.45, 0, 0, 0, 0, 0.07, 0.7, 0.07); x.p('x', GP.cyl, 0xffd23f, 0, -0.08, 0, 0, 0, 0, 0.05, 0.12, 0.05);
+  x.p('x', GP.rboxS, 0xffd23f, 0, 0.25, 0, 0, 0, 0, 0.5, 0.5, 0.06); for (let i = 0; i < 3; i++) x.p('x', GP.rboxS, 0xb8860b, -0.14 + i * 0.14, 0.3, 0.035, 0, 0, 0, 0.05, 0.32, 0.02); const proto = toGroup(b);
+  proto.traverse((o) => { if (o.isMesh) { o.userData.shared = 1; if (o.material && o.material.emissive) { o.material = o.material.clone(); o.material.emissive.setHex(0xffb000); o.material.emissiveIntensity = 0.55; } } });
+  const cand = []; for (const a of ROADS_) for (const c of ROADS_) for (const [sx, sz] of [[1, 1], [-1, -1], [1, -1], [-1, 1]]) cand.push([a + sx * 7.6, c + sz * 7.6]);
+  let seed = 7; const r = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }; for (let i = cand.length - 1; i > 0; i--) { const j = (r() * (i + 1)) | 0; [cand[i], cand[j]] = [cand[j], cand[i]]; }
+  for (const [px, pz] of cand) { if (G.spats.length >= 10) break; if (collideTown(px, pz, 0.8).hit || G.spats.some((q) => Math.hypot(q.x - px, q.z - pz) < 25)) continue; const m = proto.clone(); m.scale.setScalar(1.7); m.position.set(px, 1.2, pz); E.scene.add(m); G.spats.push({ id: G.spats.length, x: px, z: pz, m }); } }
+function stepSpatulas(dt) { if (!G.spats || !S) return; const got = S.spatulas || (S.spatulas = []); for (const sp of G.spats) { const have = got.includes(sp.id); sp.m.visible = !have && G.where === 'town'; if (have) continue;
+    sp.m.rotation.y = G.t * 2; sp.m.position.y = 1.6 + Math.sin(G.t * 3 + sp.id) * 0.2; if (G.where === 'town' && Math.hypot(P.x - sp.x, P.z - sp.z) < (G.driving ? 2.6 : 1.6)) { got.push(sp.id); sfx('win'); burst('sparkle', sp.x, 1.4, sp.z, 18); burst('confetti', sp.x, 1.6, sp.z, 12);
+      const bonus = S.mode === 'explore' ? 0 : 50; S.money += bonus; banner('✨ Golden Spatula ' + got.length + '/10!', got.length === 10 ? 'You found them ALL! Trophy unlocked 🏆' : (bonus ? '+$' + bonus + ' · ' : '') + 'They are hidden on street corners all over Eatsville'); if (got.length === 10) S.trophies++; persist(); } } }
 // ---------------- town signs (owned lots, for-sale, grades) ----------------
 function rebuildTownSigns() { G.signGrp.clear(); if (!S) return;
   for (const b of BUILDINGS) { if (b.lot) { const br = S.branches[b.lot]; G.signGrp.add(makeLotSign(b, br ? br.name.toUpperCase() : null, br ? b.col2 : 0, br ? 0 : (b.lot === 'A' && S.mode === 'worker' ? 800 : LOTS[b.lot].price)));
@@ -303,7 +317,7 @@ function stepTown(dt, mv) {
     if (G.camT <= 0 && Math.abs(c.v) > 2) G.yaw += wrapAng(c.ry + (c.v < 0 ? PI : 0) - G.yaw) * Math.min(1, dt * 2.2); }
   else { P.model.visible = true; movePlayer(dt, mv, (x, z, r) => collideTown(x, z, r)); }
   P.model.position.set(P.x, G.driving ? 0 : 0.18 * onWalk(P.x, P.z), P.z); P.model.rotation.y = P.ry; animPerson(P.model, dt, { speed: P.sp, carry: !!P.carry });
-  stepTraffic(dt, vis); decorCull(T, E.camera, E.sun.position, E.scene.fog ? E.scene.fog.density : 0);
+  stepSpatulas(dt); stepTraffic(dt, vis); decorCull(T, E.camera, E.sun.position, E.scene.fog ? E.scene.fog.density : 0);
   // camera
   const dist = G.driving ? 12 : 8, h = G.driving ? 5.5 : 4.2; _fwd.set(Math.sin(G.yaw), 0, Math.cos(G.yaw)); const tx = P.x, tz = P.z;
   let cd = dist; for (let i = 1; i <= 16; i++) { const f = dist * i / 16, sx = tx - _fwd.x * f, sz = tz - _fwd.z * f; if (T.colliders.some((c) => c.h !== 0 && sx > c.x0 - 0.4 && sx < c.x1 + 0.4 && sz > c.z0 - 0.4 && sz < c.z1 + 0.4)) { cd = Math.max(1.6, f - dist / 16); break; } }
