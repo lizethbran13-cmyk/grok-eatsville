@@ -67,7 +67,7 @@ export class RestSim {
   addMess(kind, x, z) { if (this.mess.length > 14) return; x = Math.max(-10.3, Math.min(10.3, x)); z = Math.max(-2.4, Math.min(7.2, z)); this.mess.push({ id: NID++, kind, x, z }); }
   anyClean() { for (const k in this.clean) if (this.clean[k] > 0) return true; return false; }
   stepStation(s, dt) {
-    if (s.broken) { s.gagT += dt; if (s.id === 'fryer' && Math.random() < dt * 0.25) this.addMess('spill', s.x + (Math.random() - 0.5) * 2, s.z + 0.8 + Math.random()); return; }
+    if (s.broken) { s.gagT += dt; if (s.id === 'fryer' && Math.random() < dt * 0.07 && this.mess.filter((m) => m.kind === 'spill').length < 4) this.addMess('spill', s.x + (Math.random() - 0.5) * 2, s.z + 0.8 + Math.random()); return; }
     if (s.cook) { s.cook.t += dt * (1 + (this.br.upg ? this.br.upg.speed : 0) * 0.25); if (s.cook.t >= s.cook.T) { s.ready = s.cook.dish; s.readyT = 0; s.cook = null; this.fx.push({ k: 'ding', x: s.x, z: s.z }); } }
     else if (s.ready && s.ready !== 'burnt') { s.readyT += dt; if (s.readyT > 40) { s.ready = 'burnt'; this.fx.push({ k: 'smoke', x: s.x, z: s.z }); EV.push({ t: 'toast', m: '🔥 Oops, something burnt on the ' + STATIONS[s.id].n, bad: true }); } }
     // Ratita tech malfunctions (fair: never more than one at a time, and not in the first 40s)

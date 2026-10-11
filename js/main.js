@@ -138,7 +138,7 @@ function rebuildRoom() { if (G.where !== 'room') return; const bid = G.bid, px =
 function nearestDoor() { let best = null, bd = 2.4; for (const d of T.doors) { const dd = Math.hypot(d.x - P.x, d.z - P.z); if (dd < bd) { bd = dd; best = d; } } return best; }
 function roomSpot() { if (!G.room) return null; const lx = P.x - IX, lz = P.z; let best = null, bd = 9; for (const s of G.room.spots) { const d = Math.hypot(s.x - lx, s.z - lz); if (d < s.r && d < bd) { bd = d; best = s; } } return best; }
 function currentAction() {
-  if (G.where === 'town') { if (G.driving) return { label: '🚶 Get out', a: 'exitCar' }; const d = nearestDoor(); if (d) return { label: 'Enter ' + titleCase(d.name), a: 'enter', d }; return null; }
+  if (G.where === 'town') { if (G.driving) return null; const d = nearestDoor(); if (d) return { label: 'Enter ' + titleCase(d.name), a: 'enter', d }; return null; }
   const lx = P.x - IX, lz = P.z;
   if (G.sim || (Net.isClient() && G.room.kind === 'rest')) { const br = branchFor(G.bid); const canWork = !br.rival || (S.career.shift);
     if (canWork && G.sim) { if (G.deliv && P.carry === G.deliv.dish && !G.deliv.bag && branchKey(G.bid) === G.deliv.key && Math.hypot(lx - 5, lz - (REST.counterZ + 0.9)) < 1.5) return { label: 'Bag delivery 🛍️', a: 'bag' };
@@ -274,7 +274,7 @@ function frame(dt) {
   // input
   if (edge('menu')) U.UI.open ? U.close() : U.pauseMenu(C);
   const mv = U.UI.open ? { x: 0, y: 0 } : readMove(); const A = U.UI.open ? null : currentAction();
-  const ab = $('bAct'); if (A) { ab.classList.remove('dim'); if (ab.dataset.l !== A.label) { ab.dataset.l = A.label; ab.innerHTML = '<span>' + A.label + '</span>'; } } else { ab.classList.add('dim'); if (ab.dataset.l !== '') { ab.dataset.l = ''; ab.innerHTML = '<span>✋</span>'; } }
+  const ab = $('bAct'); ab.classList.toggle('hidden', !!G.driving); if (A) { ab.classList.remove('dim'); if (ab.dataset.l !== A.label) { ab.dataset.l = A.label; ab.innerHTML = '<span>' + A.label + '</span>'; } } else { ab.classList.add('dim'); if (ab.dataset.l !== '') { ab.dataset.l = ''; ab.innerHTML = '<span>✋</span>'; } }
   if (edge('act') && !U.UI.open) doAction(A);
   // car button
   const carNear = G.where === 'town' && !G.driving && G.carState && Math.hypot(G.carState.x - P.x, G.carState.z - P.z) < 3.4;
