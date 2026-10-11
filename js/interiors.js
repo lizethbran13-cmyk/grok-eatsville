@@ -7,7 +7,7 @@ import { PR } from './props.js';
 import { rcyl, torus, lathe, leaf } from './shapes.js';
 import { textGeo } from './text3d.js';
 import { canvasTex, rng } from './util.js';
-import { BLD, THEMES, DECOR } from './data.js';
+import { BLD, THEMES, DECOR , HOME_PAINT, HOME_FLOOR, HOME_FAB, HOME_ITEMS } from './data.js';
 import { STATIONS, DISH } from './food.js';
 import { makePerson } from './people.js';
 import { makeRat, makeMartina, makeCandy } from './ratmodels.js';
@@ -64,6 +64,7 @@ export const NPCLOOK = {
   mayor: { skin: 0x8d5a3b, hair: 0xd8d8e0, hairStyle: 'short', shirt: 0xffffff, coat: 0x1e3a8a, pants: 0x1e3a8a, hat: 'none', tie: 0xdc2626, w: 1.15, glasses: true },
 };
 // ---------- restaurant ----------
+export const HOME_SLOTS = (L, Rr) => [[L + 6.5, 3.5], [3, 4.5], [-3, 4.5], [Rr - 5, 2], [L + 5.4, -1.4, 0], [Rr - 1, -4, -PI / 2], [-6, 5.4], [6, 5.4]];
 export const REST = { W: 22, D: 16, stX: { grill: -8.2, fryer: -6.1, drinks: -4.0, oven: -1.8, prep: 0.4, freezer: 2.6, stove: 4.8 }, sinkX: 7.0, trashX: 9.4, stZ: -6.9, counterZ: -3.2,
   tables: [[-6, 0.6], [6, 0.6], [-2, 0.6], [2, 0.6], [-6, 4.4], [6, 4.4], [-2, 4.4], [2, 4.4]], office: [-9.3, 6.2], doorX: 0, decor: [[-10, -1.8], [10, -1.8], [-10, 2.5], [10, 2.5], [-4, 6.8], [4, 6.8]] };
 export function seatsFor(level) { const n = [4, 6, 8][Math.min(2, level)]; const out = []; REST.tables.slice(0, n).forEach(([tx, tz], ti) => { out.push({ x: tx - 0.95, z: tz, ry: PI / 2, t: ti, side: -1 }, { x: tx + 0.95, z: tz, ry: -PI / 2, t: ti, side: 1 }); }); return out; }
@@ -116,11 +117,12 @@ function restaurant(R, br) {
 }
 // ---------- other buildings ----------
 const LAYOUT = {
-  home(R, st) { const lv = st.homeLevel || 0, W = [16, 20, 24][lv], D = 14; shell(R, W, D, { wall: [0xfff1e6, 0xe0f2fe, 0xfdf4ff][lv], trim: 0x8b5cf6, floor: 'wood', curtain: 0xc4b5fd, doorX: -W / 2 + 3 });
+  home(R, st) { const lv = st.homeLevel || 0, W = [16, 20, 24][lv], D = 14; const hs = st.home || {}; const paint = HOME_PAINT.find((p) => p.id === hs.wall), fl = HOME_FLOOR.find((f) => f.id === hs.floor) || HOME_FLOOR[0], fab = HOME_FAB[hs.fab || 0];
+    shell(R, W, D, { wall: paint ? paint.c : [0xfff1e6, 0xe0f2fe, 0xfdf4ff][lv], trim: fab, floor: fl.k, floorCol: fl.c, curtain: fab, doorX: -W / 2 + 3 });
     const L = -W / 2, Rr = W / 2;
-    put(R, 'bed', L + 1.6, -4.8, 0, { col: st.bedCol || 0x8b5cf6 }); spot(R, 'bed', L + 1.6, -2.9, 'Sleep', 'bed', {}, 1.5); put(R, 'lamp', L + 3.0, -6.2, 0); put(R, 'rug', L + 2, -1.6, 0, { col: 0xc4b5fd, w: 1.6, d: 1 });
+    put(R, 'bed', L + 1.6, -4.8, 0, { col: fab }); spot(R, 'bed', L + 1.6, -2.9, 'Sleep', 'bed', {}, 1.5); put(R, 'lamp', L + 3.0, -6.2, 0); put(R, 'rug', L + 2, -1.6, 0, { col: 0xc4b5fd, w: 1.6, d: 1 });
     put(R, 'wardrobe', L + 4.5, -6.3, 0); spot(R, 'wardrobe', L + 4.5, -5.1, 'Wardrobe', 'wardrobe', {}, 1.3);
-    put(R, 'sofa', 0, 1.2, PI); put(R, 'tv', 0, -2.4, 0); spot(R, 'tv', 0, -0.4, 'Watch TV news', 'tv', {}, 1.4); put(R, 'rug', 0, -0.4, 0, { col: 0xfde68a, col2: 0xf97316, w: 2.6, d: 1.6 });
+    put(R, 'sofa', 0, 1.2, PI, { col: fab }); put(R, 'tv', 0, -2.4, 0); spot(R, 'tv', 0, -0.4, 'Watch TV news', 'tv', {}, 1.4); put(R, 'rug', 0, -0.4, 0, { col: 0xfde68a, col2: 0xf97316, w: 2.6, d: 1.6 });
     put(R, 'fridge', Rr - 0.8, -6.2, -PI / 2); spot(R, 'fridge', Rr - 2.0, -6.2, 'Snack', 'fridge', {}, 1.3); put(R, 'counter', Rr - 3.2, -6.4, 0, { w: 2.4, col: 0xfef3c7 }); put(R, 'stove', Rr - 5.4, -6.4, 0);
     put(R, 'table', Rr - 3.2, -2.6, 0, { round: true, cloth: 0xfecaca }); put(R, 'chair', Rr - 4.2, -2.6, PI / 2, { col: 0x8b5cf6 }); put(R, 'chair', Rr - 2.2, -2.6, -PI / 2, { col: 0x8b5cf6 });
     put(R, 'desk', L + 1.2, 1.8, PI / 2, { screen: 0xff4fa0 }); spot(R, 'pc', L + 2.2, 1.8, 'Empire laptop', 'empire', {}, 1.3);
@@ -131,7 +133,8 @@ const LAYOUT = {
     // garage nook (door on right side)
     const gx = new XB(R.B, IX + Rr - 1.2, 0, 3.6, 0); gx.p('g', P.rboxS, 0x9ca3af, 0, 1.4, 0, 0, 0, 0, 1.6, 2.8, 0.2); for (let i = 0; i < 6; i++) gx.p('g', P.rboxS, 0xe5e7eb, 0, 0.3 + i * 0.45, 0.12, 0, 0, 0, 1.5, 0.05, 0.05);
     spot(R, 'garage', Rr - 1.2, 4.4, 'Garage (pick car)', 'garage', {}, 1.3);
-    (st.homeDecor || []).forEach((d, i) => { const p = [[L + 6.5, 3.5], [3, 4.5], [-3, 4.5], [Rr - 5, 2]][i]; if (!p) return; const map = { plant: 'palm', aquarium: 'aquarium', jukebox: 'jukebox', arcade: 'arcade', statue: 'statue', fountain: 'chocFountain', neon: 'palm', piano: 'piano' }; put(R, map[d] || 'palm', p[0], p[1], PI); });
+    (st.homeDecor || []).forEach((d, i) => { const p = HOME_SLOTS(L, Rr)[i]; if (!p) return; const hi = HOME_ITEMS.find((h) => h.id === d); const map = { plant: 'palm', aquarium: 'aquarium', jukebox: 'jukebox', arcade: 'arcade', statue: 'statue', fountain: 'chocFountain', neon: 'palm', piano: 'piano' };
+      if (hi) put(R, hi.prop, p[0], p[1], p[2] == null ? PI : p[2], Object.assign({ col: fab }, hi.o || {})); else put(R, map[d] || 'palm', p[0], p[1], p[2] == null ? PI : p[2]); });
     spot(R, 'decor', 2.5, 5.6, 'Decorate home', 'homeDecor', {}, 1.2);
     spot(R, 'exit', R.door.x, D / 2 - 0.4, 'Exit', 'exit', {}, 1.3);
     if (st.pet !== false) { const cr = makeCandy(); const c = cr.root; c.userData.candyRig = cr; c.scale.setScalar(0.9); npc(R, c, 2.2, 0.2, -0.6, 'pet', 'Candy'); spot(R, 'pet', 2.2, 1.1, 'Pet Candy', 'pet', {}, 1.2); }
