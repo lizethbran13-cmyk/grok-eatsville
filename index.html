@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#14b8a6">
+<title>Grok Eatsville Tycoon</title>
+<link rel="stylesheet" href="style.css?v=20261011a">
+<script type="importmap">
+{ "imports": { "three": "./lib/three.module.min.js", "three/addons/": "./lib/addons/" } }
+</script>
+<script src="lib/peerjs.min.js"></script>
+<script src="lib/grok-net.js"></script>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud" class="hidden">
+  <div id="hTop"><span id="hMoney">$0</span><span id="hClock">Day 1</span><button id="bMenu" data-b="menu">☰</button></div>
+  <div id="hBranch" class="hidden"></div>
+  <div id="hDeliv" class="hidden"></div>
+  <div id="hNav" class="hidden"></div>
+</div>
+<div id="touch" class="hidden">
+  <div id="touchZone"></div>
+  <div id="stickRing"></div><div id="stickKnob"></div>
+  <button id="bAct" class="tb dim" data-b="act"><span>✋</span></button>
+  <button id="bCar" class="tb hidden" data-b="car">🚗</button>
+  <button id="bCall" class="tb hidden" data-b="call">📞<small>Snowie $25</small></button>
+</div>
+<div id="floats"></div>
+<div id="banner"></div>
+<div id="ui"></div>
+<div id="toast"></div>
+<div id="fade"></div>
+<div id="loading"><div class="lg">GROK<br><span>EATSVILLE TYCOON</span></div><div class="bar"><i id="loadBar"></i></div><p id="loadTxt">Loading…</p></div>
+<script type="module" src="js/main.js?v=20261011a"></script>
+</body>
+</html>
