@@ -137,7 +137,7 @@ const LAYOUT = {
       if (hi) put(R, hi.prop, p[0], p[1], p[2] == null ? PI : p[2], Object.assign({ col: fab }, hi.o || {})); else put(R, map[d] || 'palm', p[0], p[1], p[2] == null ? PI : p[2]); });
     spot(R, 'decor', 2.5, 5.6, 'Decorate home', 'homeDecor', {}, 1.2);
     spot(R, 'exit', R.door.x, D / 2 - 0.4, 'Exit', 'exit', {}, 1.3);
-    if (st.pet !== false) { const cr = makeCandy(); const c = cr.root; c.userData.candyRig = cr; c.scale.setScalar(0.9); npc(R, c, 2.2, 0.2, -0.6, 'pet', 'Candy'); spot(R, 'pet', 2.2, 1.1, 'Pet Candy', 'pet', {}, 1.2); }
+    if (st.pet !== false) { const cr = makeCandy(); const c = cr.root; c.userData.candyRig = cr; c.scale.setScalar(0.55); npc(R, c, 2.2, 0.2, -0.6, 'pet', 'Candy'); spot(R, 'pet', 2.2, 1.1, 'Pet Candy', 'pet', {}, 1.2); }
   },
   house(R, st, b) { shell(R, 14, 12, { wall: new THREE.Color(b.col).lerp(new THREE.Color(0xffffff), 0.5).getHex(), trim: b.col2, floor: 'wood', curtain: b.col2, doorX: 2 });
     put(R, 'sofa', -3, -1, 0, { col: b.col2 }); put(R, 'tv', -3, -4.8, 0); put(R, 'rug', -3, -2.8, 0, { col: b.col, w: 2.4, d: 1.4 }); put(R, 'lamp', -5.8, -4.6, 0);
