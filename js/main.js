@@ -14,7 +14,7 @@ import { dishModel, DISH, STATIONS } from './food.js';
 import { animRat, makeMartina, animMartina, makeCandy, animCandy } from './ratmodels.js';
 import { initDecorCull, decorCull, makeVisTest, warmShaders } from './perf.js';
 import { initFx, burst, stepFx, clearFx, floatText, stepFloats, clearFloats } from './fx.js';
-import { S, setS, persist, newDay, ensureToday, autopilotHour, offsiteInspection, branchFor, branchKey, EV, isOpen, fmtTime, MIN_PER_SEC, BEDTIME, DAY_START, rankUp, news } from './empire.js';
+import { S, setS, persist, loadSave, newGame, newDay, ensureToday, autopilotHour, offsiteInspection, branchFor, branchKey, EV, isOpen, fmtTime, MIN_PER_SEC, BEDTIME, DAY_START, rankUp, news } from './empire.js';
 import { RestSim } from './sim.js';
 import { BLD, BUILDINGS, OUTFITS, CAR, CAREER, LOTS, RIVALS } from './data.js';
 import * as U from './ui.js';
@@ -42,7 +42,7 @@ async function boot() {
   env('day'); E.camera.position.set(-30, 40, -10); E.camera.lookAt(0, 0, 0);
   warmShaders(E.renderer, E.scene, E.camera); step(100, 'Open for business!');
   setTimeout(() => $('loading').classList.add('gone'), 200);
-  U.UI.C = C; G.state = 'title'; titleCam(); U.title(C);
+  Net.init(G, C, { myLook: () => (S && S.look ? lookFromSave() : { skin: 0xf2c29b, hair: 0x5a3820, hairStyle: 'short', shirt: 0x3b82f6, pants: 0x334155, shoes: 0x222222, brows: 'happy' }), afterSim: (r) => afterSim(r, null) }); U.UI.C = C; G.state = 'title'; titleCam(); U.title(C);
   document.addEventListener('pointerdown', () => { initAudio(); applySound(); }, { once: false });
   let last = performance.now(); const loop = (now) => { requestAnimationFrame(loop); const dt = Math.min(0.05, (now - last) / 1000); last = now; frame(dt); }; requestAnimationFrame(loop);
   const p = new URLSearchParams(location.search); if (p.get('mp') && window.GrokNet) Net.fromUrl(C);
@@ -61,14 +61,16 @@ export const C = {
   rebuildRoom, rebuildTownSigns, respawnCar, restyle, sound: applySound,
   clockIn() { S.career.shift = true; S.career.tips = 0; S.career.served = 0; S.career.shiftStart = S.time; G.sim.career = true; G.sim.staff = G.sim.staff.filter((f) => f.role !== 'cook').concat(G.sim.staff.filter((f) => f.role === 'cook').slice(0, 1)); banner('⏱️ Clocked in!', 'Cook what customers order. Manager Mo is watching…'); },
   clockOut() { const c = S.career; const hrs = Math.max(1, (S.time - c.shiftStart) / 60); const pay = Math.round(CAREER[c.rank].wage * Math.min(1, hrs / 4)) + c.tips; S.money += pay; c.shift = false; if (G.sim) G.sim.career = false; persist(); banner('💵 Shift done! +$' + pay, c.served + ' customers served · ' + c.tips + ' in tips'); sfx('buy'); },
-  delivery: () => G.deliv,
+  delivery: () => G.deliv, title: () => U.title(C),
+  hostStart() { if (G.state === 'play') return; const had = loadSave(); if (!had) newGame('own'); C.start(!had); },
+  changedRemote() { rebuildTownSigns(); if (G.sim && G.sim.clientOf) { const k = branchKey(G.bid); if (k && S.branches[k]) G.sim.br = S.branches[k]; } },
   newDelivery(key) { const hs = ['h1', 'h2', 'h3', 'h4']; const br = S.branches[key]; const d = br.menu[(Math.random() * br.menu.length) | 0]; G.deliv = { dish: d, house: hs[(Math.random() * hs.length) | 0], key, bag: false, t0: S.time }; toast('📱 New delivery: ' + DISH[d].e + ' for ' + BLD[G.deliv.house].name); },
 };
 // ---------------- player ----------------
 const P = { x: 0, z: 0, ry: 0, sp: 0, carry: null, model: null };
 G.P = P;
 function lookFromSave() { const L = S.look, o = OUTFITS.find((x) => x.id === L.outfit) || OUTFITS[0]; return { skin: L.skin, hair: L.hair, hairStyle: o.hat === 'helmet' || o.hat === 'dino' ? 'short' : L.hairStyle, shirt: L.shirt ? parseInt(L.shirt.slice(1), 16) : o.shirt, pants: o.pants, shoes: 0x222222, hat: o.hat, hatCol: o.hatCol, apron: o.apron, coat: o.coat, glasses: o.glasses, brows: 'happy' }; }
-function restyle() { if (P.model) G.pModel.remove(P.model); P.model = makePerson(lookFromSave()); G.pModel.add(P.model); P.carryKey = null; }
+function restyle() { if (P.model) G.pModel.remove(P.model); P.model = makePerson(lookFromSave()); G.pModel.add(P.model); P.carryKey = null; Net.sendLook && Net.sendLook(); }
 function setCarryModel() { const R = P.model && P.model.userData.rig; if (!R) return; const want = P.carry || null; if (P.carryKey === want) return; P.carryKey = want; R.hold.clear(); if (want) { const m = dishModel(want === 'dirty' ? 'dirty' : want, want === 'bag' ? 1.2 : 1.6); R.hold.add(m); } }
 function placeOutside(bid) { const d = T.doors.find((x) => x.bid === bid); P.x = d.x + Math.sin(d.ry) * 1.2; P.z = d.z + Math.cos(d.ry) * 1.2; P.ry = d.ry; G.yaw = d.ry + PI; G.camD = null; G.snapCam = true; }
 // ---------------- car ----------------
@@ -152,13 +154,14 @@ function doAction(A) {
   if (A.a === 'enter') { if (G.driving) return; enterBuilding(A.d.bid); return; }
   if (A.a === 'exitCar') { exitCar(); return; }
   if (A.a === 'bag') { P.carry = 'bag'; G.deliv.bag = true; sfx('pop'); toast('🛍️ Bagged! Drive it to ' + BLD[G.deliv.house].name); return; }
-  if (A.a === 'deliver') { const mins = S.time - G.deliv.t0; const tip = Math.round((15 + Math.max(0, 60 - mins * 0.5)) * ((CAR[S.car] || {}).deliv || 1)); const base = DISH[G.deliv.dish].price; S.money += base + tip; S.deliveries++; P.carry = null; G.deliv = null; sfx('buy'); burst('confetti', P.x, 1.5, P.z); floatText('+$' + (base + tip), P.x, 2.2, P.z, 'cash'); toast('🛵 Delivered! +$' + (base + tip) + ' (tip $' + tip + ')'); persist(); return; }
+  if (A.a === 'deliver') { const mins = S.time - G.deliv.t0; const tip = Math.round((15 + Math.max(0, 60 - mins * 0.5)) * ((CAR[S.car] || {}).deliv || 1)); const base = DISH[G.deliv.dish].price; if (!Net.earn(base + tip, 'deliv')) { S.money += base + tip; S.stats.earned += base + tip; S.deliveries++; } P.carry = null; G.deliv = null; sfx('buy'); burst('confetti', P.x, 1.5, P.z); floatText('+$' + (base + tip), P.x, 2.2, P.z, 'cash'); toast('🛵 Delivered! +$' + (base + tip) + ' (tip $' + tip + ')'); persist(); return; }
   if (A.a === 'sim') { const r = Net.isClient() ? Net.act(lx, lz) : G.sim.act(Net.pid(), lx, lz); afterSim(r, A.q); return; }
   if (A.a === 'spot') spotAction(A.s);
 }
-function afterSim(r, q) { if (!r) return; const s = { serve: 'heart', cook: 'click', take: 'pop', fix: 'hit', clean: 'splat', toss: 'land', wash: 'splash', hands: 'splash', deny: 'deny' }[r]; if (s) sfx(s);
+function afterSim(r, q) { if (!r) return; if (r === 'fix' && !q) { sfx('hit'); burst('sparkle', P.x, 1.2, P.z, 4); return; } const s = { serve: 'heart', cook: 'click', take: 'pop', fix: 'hit', clean: 'splat', toss: 'land', wash: 'splash', hands: 'splash', deny: 'deny' }[r]; if (s) sfx(s);
   if (r === 'serve') burst('heart', P.x, 1.6, P.z); if (r === 'clean' || r === 'wash' || r === 'hands') burst('clean', P.x, 0.6, P.z); if (r === 'fix') burst('sparkle', IX + q.s.x, 1.2, q.s.z, 4); }
 function spotAction(s) {
+  if (Net.isClient() && ['office', 'buyLot', 'bank', 'mayor', 'hire', 'stock', 'ratitaShop', 'carShop', 'homeDecor', 'fines', 'quiz', 'bed', 'garage'].includes(s.kind)) { toast('🌐 Your host runs the company. Ask them to do that!'); return; }
   const br = G.room.kind === 'rest' ? branchFor(G.bid) : null; const key = br && branchKey(G.bid);
   switch (s.kind) {
     case 'exit': exitBuilding(); break;
@@ -199,6 +202,7 @@ function hourly() {
   for (const [k, br] of Object.entries(S.branches)) if (k !== liveKey && isOpen()) autopilotHour(k, br);
   const td = S.today; if (td && td.insp && !td.insp.done && S.time >= td.insp.at) { td.insp.done = true; const br = S.branches[td.insp.key]; if (br) { if (liveKey === td.insp.key && G.sim) G.sim.startInspection(); else offsiteInspection(td.insp.key, br); } }
   if (td && td.critic && !td.critic.done && S.time >= td.critic.at) { if (liveKey === td.critic.key && G.sim) { if (G.sim.spawnSpecial('critic')) td.critic.done = true; } else if (S.time > td.critic.at + 120) { td.critic.done = true; const br = S.branches[td.critic.key]; if (br) { const stars = Math.max(1, Math.min(5, Math.round(br.rep / 22 + (br.sanitation > 75 ? 1 : 0)))); S.reviews.unshift({ day: S.day, name: br.name, stars, text: stars >= 4 ? 'Ate here while the owner was out. Still lovely!' : 'The owner was away and it showed.' }); br.rep += (stars - 3) * 2; EV.push({ t: 'review', stars, text: 'Gourmet Gustavo visited ' + br.name + ' while you were out.', name: br.name }); } } }
+  if (!G.deliv && isOpen() && S.today && G.sim && !G.sim.rival && branchKey(G.bid) && Math.random() < (S.today.deliv ? 0.3 : 0.6)) { S.today.deliv = (S.today.deliv || 0) + 1; C.newDelivery(branchKey(G.bid)); banner('📱 RING RING! Delivery order', 'Cook ' + DISH[G.deliv.dish].e + ', bag it at the register, then drive it over. Fast = big tips!'); sfx('ding'); }
   rebuildTownSigns(); persist(); Net.pushState && Net.pushState();
 }
 // ---------------- events -> UI ----------------
@@ -320,8 +324,8 @@ function stepRoom(dt, mv) {
   for (const n of R.npcs) { if (n.m.userData.rig) animPerson(n.m, dt, { speed: 0, wave: n.anim === 'wave' && Math.sin(G.t * 0.7 + n.x) > 0.6, work: n.anim === 'work', angry: n.anim === 'angry' }); else animAny(n.m, dt, 0, {}); }
   // camera: dollhouse view from the open front
   const lx = P.x - IX; const tx = IX + clamp(lx, -R.W / 2 + 4.5, R.W / 2 - 4.5), tz = clamp(P.z, -R.D / 2 + 3.5, R.D / 2 - 3);
-  const cam = E.camera; const cx = tx, cy = 9.6, cz = tz + 8.8; if (G.snapRoom !== R) { cam.position.set(cx, cy, cz); G.snapRoom = R; } cam.position.x = damp(cam.position.x, cx, 6, dt); cam.position.y = damp(cam.position.y, cy, 6, dt); cam.position.z = damp(cam.position.z, cz, 6, dt);
-  cam.lookAt(tx, 0.8, tz - 1.0); cam.fov = E.baseFov - 4; cam.updateProjectionMatrix(); followShadow(tx, 0, tz);
+  const cam = E.camera; const cx = tx, cy = 7.4, cz = tz + 7.2; if (G.snapRoom !== R) { cam.position.set(cx, cy, cz); G.snapRoom = R; } cam.position.x = damp(cam.position.x, cx, 6, dt); cam.position.y = damp(cam.position.y, cy, 6, dt); cam.position.z = damp(cam.position.z, cz, 6, dt);
+  cam.lookAt(tx, 1.0, tz - 1.3); cam.fov = E.baseFov - 2; cam.updateProjectionMatrix(); followShadow(tx, 0, tz);
   if (G.deliv && G.deliv.bag && R.bid === G.deliv.house) {} }
 // ---------------- HUD ----------------
 let hudT = 0;
@@ -336,5 +340,5 @@ function hud() { hudT -= 1; if (hudT > 0) return; hudT = 6;
   else if (G.where === 'town' && G.deliv && G.deliv.bag) { const d = T.doors.find((x) => x.bid === G.deliv.house); const ang = Math.atan2(d.x - P.x, d.z - P.z) - G.yaw; nav.classList.remove('hidden'); nav.innerHTML = `<i style="transform:rotate(${-ang}rad)">⬆</i> ${titleCase(BLD[G.deliv.house].name)} · ${Math.round(Math.hypot(d.x - P.x, d.z - P.z))}m`; } else nav.classList.add('hidden');
 }
 // test hooks
-window.__G = { G, C, P, get S() { return S; }, E, T, enterBuilding, exitBuilding, sleep, U, currentAction, doAction };
+window.__G = { G, C, P, Net, get S() { return S; }, E, T, enterBuilding, exitBuilding, sleep, U, currentAction, doAction };
 boot();
