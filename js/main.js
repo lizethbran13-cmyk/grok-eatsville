@@ -59,6 +59,7 @@ export const C = {
   start(isNew) { G.state = 'play'; ensureToday(); G.lastHour = Math.floor(S.time / 60); restyle(); respawnCar(false); rebuildTownSigns(); setupTraffic(); U.close();
     const sp = BLD.home; placeOutside('home'); $('hud').classList.remove('hidden'); $('touch').classList.remove('hidden'); playMusic('kitchen'); applySound();
     if (isNew) setTimeout(() => S.mode === 'worker' ? banner('👋 Welcome to Eatsville!', 'Your new job: head to MEGA MUNCH (west) and clock in with Manager Mo') : S.mode === 'explore' ? banner('🗺️ Explore mode', 'Go anywhere, buy anything. Every door opens!') : banner('👋 Welcome to Eatsville!', 'Your diner is on Main St (east). Hop in your car and go cook!'), 600);
+    if (!S.seen.ctl) { S.seen.ctl = 1; setTimeout(() => toast('👈 Drag on the left side to walk · swipe the right side to look around · tap the big orange button to do things'), 4200); }
     G.navTarget = S.mode === 'worker' && !S.branches.A ? 'mega' : 'lotA'; },
   coop() { Net.lobby(C); }, net: () => Net.code(), quit() { Net.leave(); U.close(); G.state = 'title'; leaveRoom(true); $('hud').classList.add('hidden'); $('touch').classList.add('hidden'); U.title(C); },
   changed(key, rebuild) { persist(); if (G.sim && branchKey(G.bid) === key) { G.sim.br = S.branches[key]; if (rebuild) rebuildRoom(); } rebuildTownSigns(); Net.pushState && Net.pushState(); },
@@ -292,6 +293,10 @@ function frame(dt) {
   // input
   if (edge('menu')) U.UI.open ? U.close() : U.pauseMenu(C);
   const mv = U.UI.open ? { x: 0, y: 0 } : readMove(); const A = U.UI.open ? null : currentAction();
+  { // target ring under whatever the action button will use
+    if (!G.ring) { G.ring = new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.07, 10, 40), new THREE.MeshBasicMaterial({ color: 0xffe14d, transparent: true, opacity: 0.85, depthWrite: false })); G.ring.rotation.x = -PI / 2; E.scene.add(G.ring); }
+    const q = A && A.q; const tg = q && (q.s || q.c || q.m); const sp = A && A.a === 'spot' && A.s; const t = tg || sp; G.ring.visible = !!t && G.where === 'room';
+    if (G.ring.visible) { G.ring.position.set(IX + t.x, 0.06, t.z + (q && q.s ? 0.35 : 0)); const k = 1 + Math.sin(G.t * 6) * 0.08; G.ring.scale.set(k, k, k); G.ring.material.color.setHex(q && q.a === 'fix' ? 0xff4f6d : 0xffe14d); } }
   const ab = $('bAct'); ab.classList.toggle('hidden', !!G.driving); if (A) { ab.classList.remove('dim'); if (ab.dataset.l !== A.label) { ab.dataset.l = A.label; ab.innerHTML = '<span>' + A.label + '</span>'; } } else { ab.classList.add('dim'); if (ab.dataset.l !== '') { ab.dataset.l = ''; ab.innerHTML = '<span>✋</span>'; } }
   if (edge('act') && !U.UI.open) doAction(A);
   // car button
