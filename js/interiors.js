@@ -68,6 +68,59 @@ export const HOME_SLOTS = (L, Rr) => [[L + 6.5, 3.5], [3, 4.5], [-3, 4.5], [Rr -
 export const REST = { W: 22, D: 16, stX: { grill: -8.2, fryer: -6.1, drinks: -4.0, oven: -1.8, prep: 0.4, freezer: 2.6, stove: 4.8 }, sinkX: 7.0, trashX: 9.4, stZ: -6.9, counterZ: -3.2,
   tables: [[-6, 0.6], [6, 0.6], [-2, 0.6], [2, 0.6], [-6, 4.4], [6, 4.4], [-2, 4.4], [2, 4.4]], office: [-9.3, 6.2], doorX: 0, decor: [[-10, -1.8], [10, -1.8], [-10, 2.5], [10, 2.5], [-4, 6.8], [4, 6.8]] };
 export function seatsFor(level) { const n = [4, 6, 8][Math.min(2, level)]; const out = []; REST.tables.slice(0, n).forEach(([tx, tz], ti) => { out.push({ x: tx - 0.95, z: tz, ry: PI / 2, t: ti, side: -1 }, { x: tx + 0.95, z: tz, ry: -PI / 2, t: ti, side: 1 }); }); return out; }
+// lived-in house dressing: kitchen, living nook, bedroom bits, front play corner, wall gallery + sign, string lights
+function homeDense(R, W, D, L, Rr, fab, paint) { const bz = -D / 2 + 0.08;
+  // kitchen
+  put(R, 'sink', 0.9, -6.4, 0); { const c = new XB(R.B, IX + 3.9, 2.55, bz, 0); PR.wallCabinets(c, { w: 5.6 }); }
+  { const c = new XB(R.B, IX + 4.8, 0, -6.4, 0); PR.fruitBowl(c); PR.cakeDome(new XB(R.B, IX + 5.6, 0, -6.4, 0), { cake: 0xfde68a }); PR.tipJar(new XB(R.B, IX + 4.1, 0, -6.4, 0)); }
+  put(R, 'rug', Rr - 3.2, -4.4, 0, { col: 0xfca5a5, col2: 0xffffff, w: 1.3, d: 0.6 }); PR.fruitBowl(new XB(R.B, IX + Rr - 3.2, 0, -2.6, 0), { y: 0.78 });
+  // living room
+  put(R, 'coffeeTable', 0, -0.25, 0); put(R, 'chair', -2.3, 0.7, PI * 0.8, { col: fab }); put(R, 'lamp', 1.9, 1.7, 0); put(R, 'plant', -1.7, -6.4, 0, { pot: 0x60a5fa });
+  put(R, 'shelf', L + 0.45, -0.3, PI / 2, { w: 1.6, h: 1.8, items: 'books' });
+  // bedroom bits
+  put(R, 'nightstand', L + 3.0, -4.6, 0); put(R, 'toyBox', L + 1.0, -2.4, PI / 2, { col: fab }); { const b = new XB(R.B, IX + L + 1.6, 0, -5.3, 0); b.p('f', P.sphere, 0xb45309, 0.35, 0.75, 0, 0, 0, 0, 0.18, 0.2, 0.15); b.p('f', P.sphere, 0xb45309, 0.35, 1.0, 0, 0, 0, 0, 0.13, 0.12, 0.12); b.p('f', P.sphere, 0xb45309, 0.26, 1.1, 0, 0, 0, 0, 0.05, 0.05, 0.04); b.p('f', P.sphere, 0xb45309, 0.44, 1.1, 0, 0, 0, 0, 0.05, 0.05, 0.04); }
+  // toys + slippers scattered on the floor, a dresser by the bed
+  { const t = new XB(R.B, IX, 0, 0, 0); t.p('g', P.sphere, 0xef4444, -3.3, 0.18, -2.3, 0, 0, 0, 0.18, 0.18, 0.18); t.p('g', P.sphere, 0xffffff, -3.3, 0.18, -2.3, 0, 0, 0, 0.185, 0.04, 0.185);
+    [[0x60a5fa, -4.2, -0.6, 0.2], [0xfacc15, -3.95, -0.45, 0.6], [0x4ade80, -4.05, -0.6, 0], [0xf472b6, -4.1, -0.52, 0.3]].forEach(([c, a, b, r], i) => t.p('g', P.rboxS, c, a, 0.1 + (i === 3 ? 0.2 : 0), b, 0, r, 0, 0.2, 0.2, 0.2));
+    for (const sx of [-0.12, 0.12]) t.p('f', P.capsule, 0xfda4af, L + 2.1 + sx, 0.06, -3.2, PI / 2, 0, 0, 0.12, 0.12, 0.1); }
+  put(R, 'counter', L + 6.0, -6.45, 0, { w: 1.2, col: 0xf5f5f4, top: 0xd6d3d1 }); PR.fruitBowl(new XB(R.B, IX + L + 5.8, 0, -6.45, 0)); put(R, 'lamp', -4.6, 1.8, 0);
+  // front play corner
+  put(R, 'rug', 0, 4.6, 0, { col: 0xa7f3d0, col2: 0xffffff, w: 2.2, d: 1.2 }); put(R, 'beanbag', 0.7, 4.4, 0.4, { col: 0xf472b6 }); put(R, 'toyBox', -0.9, 6.3, PI, { col: 0xfacc15 }); put(R, 'plant', Rr - 0.6, 2.3, 0, { pot: 0xf472b6 });
+  // wall gallery + HOME SWEET HOME sign + string lights
+  const fr = [['hills', -6.2], ['heart', -3.8], ['sun', 3.2], ['star', 5.6]]; fr.forEach(([art, fx], i) => wallArt(R, fx, 4.75 + (i % 2) * 0.25, 'b', { art, w: 1.2, h: 0.9 }));
+  const sg = new XB(R.B, IX, 0, bz, 0); sg.p('m', P.rboxS, 0x8b5a2b, 0, 4.85, 0, 0, 0, 0, 4.2, 0.95, 0.08); sg.p('g', P.rboxS, 0xfff7ed, 0, 4.85, 0.05, 0, 0, 0, 4.0, 0.8, 0.03); txtW(sg, 'HOME SWEET HOME', 0.34, fab, 0, 4.7, 0.08, 3.6);
+  sg.p('x', P.cyl, 0x334155, 0, 6.2, 0.05, 0, 0, PI / 2, 0.015, W - 0.6, 0.015); for (let i = 0; i < 20; i++) sg.p('l', P.sphere, [0xfff1b8, 0xffc8e0, 0xc8f0ff][i % 3], -W / 2 + 0.6 + i * (W - 1.2) / 19, 6.1 - (i % 2) * 0.06, 0.08, 0, 0, 0, 0.07, 0.07, 0.07);
+  wallArt(R, 3.2, 2.3, 'l', { art: 'sun', w: 1.1, h: 0.9 }); wallArt(R, -3.6, 2.4, 'r', { art: 'burger', w: 1.1, h: 0.9 }); wallArt(R, -2.4, 4.6, 'l', { art: 'heart', w: 1.4, h: 1.0 });
+}
+// the kitchen back wall: slim hood over the hot stations, a big readable menu board, neon OPEN sign, framed photos, shelves, bunting
+function backWall(R, br, brand, trim, W, D) { const bz = -D / 2 + 0.08; const x = new XB(R.B, IX, 0, 0, 0);
+  // hood over grill/fryer/drinks/oven
+  x.p('x', P.rbox, 0xd6dbe3, -5.0, 3.3, -D / 2 + 0.55, 0, 0, 0, 7.8, 0.42, 1.0); x.p('x', P.rboxS, 0xaab2bf, -5.0, 3.06, -D / 2 + 0.55, 0, 0, 0, 7.6, 0.08, 0.92);
+  for (let i = 0; i < 9; i++) x.p('x', P.rboxS, 0x9ca3af, -8.4 + i * 0.85, 3.3, -D / 2 + 1.06, 0, 0, 0, 0.5, 0.06, 0.02);
+  x.p('x', P.rboxS, 0xc0c7d1, -5.0, 4.2, -D / 2 + 0.3, 0, 0, 0, 1.1, 1.5, 0.5); // flue
+  // big menu board
+  const name = (brand ? brand.n : (br.name || 'MENU')).toUpperCase(); const menu = (br.menu || []).slice(0, 6);
+  const mb = new XB(R.B, IX + 2.4, 0, bz, 0); mb.p('m', P.rboxS, 0x8b5a2b, 0, 4.88, 0, 0, 0, 0, 8.2, 2.05, 0.1); mb.p('g', P.rboxS, 0x1f2937, 0, 4.88, 0.06, 0, 0, 0, 7.8, 1.75, 0.04);
+  txtW(mb, name, 0.36, 0xfacc15, 0, 5.36, 0.1, 7.2); mb.p('l', P.rboxS, trim, 0, 5.3, 0.09, 0, 0, 0, 7.2, 0.03, 0.01);
+  menu.forEach((d, i) => { const D0 = DISH[d]; if (!D0) return; const col = i < 3 ? -1.95 : 1.95, row = i % 3; const line = D0.n.toUpperCase() + '  $' + Math.round(D0.price * (br.priceK || 1));
+    mb.p('l', P.sphere, [0xff6b9a, 0x60a5fa, 0x4ade80, 0xfacc15, 0xf97316, 0xa78bfa][i], col - 1.75, 5.05 - row * 0.42, 0.1, 0, 0, 0, 0.08, 0.08, 0.02); txtW(mb, line, 0.24, 0xf8fafc, col - 1.55, 4.95 - row * 0.42, 0.1, 3.4, 'g', true); });
+  if (!menu.length) txtW(mb, 'COMING SOON!', 0.3, 0xf8fafc, 0, 4.5, 0.1, 6);
+  // neon OPEN sign
+  const ne = new XB(R.B, IX - 8.2, 0, bz, 0); ne.p('g', P.rboxS, 0x111827, 0, 4.95, 0, 0, 0, 0, 3.0, 1.5, 0.08); ne.p('l', torus(0.04, 40), 0xff4fa0, 0, 4.95, 0.06, 0, 0, 0, 1.45, 0.66, 0.4);
+  txtW(ne, 'OPEN', 0.48, 0xff7ac8, 0, 4.88, 0.07, 2.4, 'l'); txtW(ne, 'HOT & FRESH', 0.17, 0x7dd3fc, 0, 4.5, 0.07, 2.4, 'l');
+  // framed photos + clock on the right
+  wallArt(R, 8.1, 5.3, 'b', { art: 'burger', w: 1.1, h: 0.85 }); wallArt(R, 9.7, 5.3, 'b', { art: 'heart', w: 0.8, h: 0.85 }); wallArt(R, 8.9, 4.25, 'b', { art: 'star', w: 1.6, h: 0.8 });
+  // shelves above the prep line and the sink
+  for (const [sx, sw] of [[2.6, 4.6], [8.2, 3.6]]) { const sh = new XB(R.B, IX + sx, 0, bz, 0); sh.p('m', P.rboxS, 0x8b5a2b, 0, 3.38, 0.18, 0, 0, 0, sw, 0.07, 0.36); for (const k of [-1, 1]) sh.p('x', P.rboxS, 0x6b7280, k * (sw / 2 - 0.3), 3.25, 0.06, 0, 0, 0, 0.05, 0.25, 0.12);
+    for (let i = 0; i < Math.round(sw / 0.42); i++) { const jx = -sw / 2 + 0.25 + i * 0.42, kind = (i + (sx > 5 ? 1 : 0)) % 3;
+      if (kind === 0) sh.p('g', lathe([[0, 0], [0.1, 0], [0.11, 0.22], [0.08, 0.26], [0, 0.26]], 16), [0xfde68a, 0xfca5a5, 0xbbf7d0, 0xbfdbfe][i % 4], jx, 3.42, 0.18);
+      else if (kind === 1) for (let j = 0; j < 4; j++) sh.p('g', rcyl(0.15, 0.025, 0.01), 0xffffff, jx, 3.43 + j * 0.03, 0.18);
+      else { sh.p('x', P.cyl, 0xb45309, jx, 3.55, 0.18, 0, 0, 0, 0.09, 0.25, 0.09); sh.p('g', P.sphere, 0xef4444, jx, 3.7, 0.18, 0, 0, 0, 0.05, 0.03, 0.05); } } }
+  // bunting + string lights along the top of the wall
+  x.p('x', P.cyl, 0x334155, 0, 6.28, bz + 0.06, 0, 0, PI / 2, 0.015, W - 0.6, 0.015); const fl = [0xff6b9a, 0xfacc15, 0x60a5fa, 0x4ade80, 0xf97316];
+  for (let i = 0; i < 26; i++) { const fx = -W / 2 + 0.7 + i * (W - 1.4) / 25; x.p('g', P.cone, fl[i % 5], fx, 6.08, bz + 0.07, PI, 0, 0, 0.2, 0.4, 0.02); if (i % 2) x.p('l', P.sphere, 0xfff1b8, fx + 0.4, 6.22, bz + 0.1, 0, 0, 0, 0.06, 0.06, 0.06); }
+}
+function txtW(x, s, size, col, px, py, pz, maxW, k = 'g', left = false) { const g = textGeo(s, size, size * 0.22); if (!g) return; const sc = Math.min(1, maxW / g.userData.w); x.p(k, g, col, left ? px + g.userData.w * sc / 2 : px, py, pz, 0, 0, 0, sc, sc, 1); }
 function restaurant(R, br) {
   const th = THEMES.find((t) => t.id === br.theme) || THEMES[0]; const W = REST.W, D = REST.D;
   const brand = br.brand; // rival colours if owned by a rival
@@ -75,8 +128,9 @@ function restaurant(R, br) {
   shell(R, W, D, { wall, trim, floor: brand ? 'check' : th.floor, floorCol: trim, doorX: REST.doorX, noBackWin: () => true });
   // kitchen back wall: tiles band + hood
   const x = new XB(R.B, IX, 0, 0, 0); x.p('g', P.rboxS, 0xffffff, 0, 1.9, -D / 2 + 0.06, 0, 0, 0, W, 1.4, 0.04); for (let i = 0; i < 22; i++) x.p('g', P.rboxS, i % 2 ? trim : 0xffffff, -W / 2 + 0.5 + i, 2.7, -D / 2 + 0.07, 0, 0, 0, 0.98, 0.2, 0.03);
-  x.p('x', P.rbox, 0xd6dbe3, -2, 3.2, -D / 2 + 0.6, 0, 0, 0, 14.5, 0.5, 1.1);
+  if (br.vacant) x.p('x', P.rbox, 0xd6dbe3, -2, 3.2, -D / 2 + 0.6, 0, 0, 0, 14.5, 0.5, 1.1);
   if (!br.vacant) {
+    backWall(R, br, brand, trim, W, D);
     for (const [st, sx] of Object.entries(REST.stX)) { const owned = br.stations[st]; put(R, owned ? st : 'emptySlot', sx, REST.stZ, 0); if (owned) R.stations.push({ id: st, x: sx, z: REST.stZ + 1.0 }); }
     put(R, 'sink', REST.sinkX, REST.stZ, 0); spot(R, 'sink', REST.sinkX, REST.stZ + 1.0, 'Wash', 'sink', {}, 1.2);
     put(R, 'trash', REST.trashX, REST.stZ + 0.3, 0); spot(R, 'trash', REST.trashX, REST.stZ + 1.1, 'Trash', 'trash', {}, 1.2);
@@ -86,7 +140,6 @@ function restaurant(R, br) {
     for (let i = 0; i < 5; i++) put(R, 'stool', -6 + i * 2.5, REST.counterZ + 0.8, 0, { col: seat });
     put(R, 'register', 5.0, REST.counterZ, 0, { nocol: true });
     const lines = (br.menu || []).slice(0, 3).map((d) => (DISH[d] ? DISH[d].n.toUpperCase() + '  $' + Math.round(DISH[d].price * (br.priceK || 1)) : ''));
-    wallProp(R, 'menuBoard', -2, 0.2, 'b', { w: 5, lines: [brand ? brand.n : (br.name || 'MENU').toUpperCase(), ...lines] });
     // dining tables
     const seats = seatsFor(br.level || 0); R.seats = seats;
     REST.tables.slice(0, [4, 6, 8][Math.min(2, br.level || 0)]).forEach(([tx, tz]) => { put(R, 'table', tx, tz, 0, { col: 0xffffff, cloth: brand ? null : (th.id === 'forest' ? 0xfef3c7 : null) }); put(R, 'chair', tx - 0.95, tz, PI / 2, { col: seat }); put(R, 'chair', tx + 0.95, tz, -PI / 2, { col: seat }); put(R, 'pendant', tx, tz, 0, { col: trim, nocol: true }); });
@@ -99,8 +152,8 @@ function restaurant(R, br) {
     // office corner
     put(R, 'desk', REST.office[0], REST.office[1] + 0.2, PI / 2, { screen: trim }); spot(R, 'office', REST.office[0] + 1.0, REST.office[1] + 0.2, br.brand ? 'Clock in' : 'Office', 'office', {}, 1.4);
     put(R, 'plant', -10.2, 4.5, 0); put(R, 'plant', 10.2, 6.6, 0); put(R, 'coatRack', 10.3, 5.2, 0); put(R, 'waterCooler', -10.3, 0.6, 0);
-    wallProp(R, 'clock', 7, 3.0, 'b'); wallArt(R, -3, 2.3, 'l', { art: 'burger', w: 1.4, h: 1 }); wallArt(R, 3.5, 2.3, 'l', { art: 'sun', w: 1.2, h: 1 }); wallArt(R, -3, 2.3, 'r', { art: 'heart', w: 1.2, h: 1 }); wallArt(R, 3.5, 2.3, 'r', { art: 'star', w: 1.2, h: 1 });
-    wallArt(R, 9.4, 1.9, 'b', { art: 'text', text: 'WASH HANDS!', w: 1.6, h: 0.6 });
+    wallProp(R, 'clock', 5.6, 3.05, 'b'); wallArt(R, -3, 2.3, 'l', { art: 'burger', w: 1.4, h: 1 }); wallArt(R, 3.5, 2.3, 'l', { art: 'sun', w: 1.2, h: 1 }); wallArt(R, -3, 2.3, 'r', { art: 'heart', w: 1.2, h: 1 }); wallArt(R, 3.5, 2.3, 'r', { art: 'star', w: 1.2, h: 1 });
+    wallArt(R, 9.4, 2.0, 'b', { art: 'text', text: 'WASH HANDS!', w: 2.0, h: 0.8, tcol: 0x0f766e });
     // decor slots
     (br.decor || []).forEach((d, i) => { const p = REST.decor[i]; if (!p) return; const map = { plant: 'palm', aquarium: 'aquarium', jukebox: 'jukebox', arcade: 'arcade', statue: 'statue', fountain: 'chocFountain', neon: 'neon', piano: 'piano' }; const nm = map[d]; if (!nm) return;
       if (nm === 'neon') wallProp(R, 'neon', p[1], 2.6, p[0] < 0 ? 'l' : 'r'); else put(R, nm, p[0], p[1], p[0] < -5 ? PI / 2 : p[0] > 5 ? -PI / 2 : PI); });
@@ -118,7 +171,7 @@ function restaurant(R, br) {
 // ---------- other buildings ----------
 const LAYOUT = {
   home(R, st) { const lv = st.homeLevel || 0, W = [16, 20, 24][lv], D = 14; const hs = st.home || {}; const paint = HOME_PAINT.find((p) => p.id === hs.wall), fl = HOME_FLOOR.find((f) => f.id === hs.floor) || HOME_FLOOR[0], fab = HOME_FAB[hs.fab || 0];
-    shell(R, W, D, { wall: paint ? paint.c : [0xfff1e6, 0xe0f2fe, 0xfdf4ff][lv], trim: fab, floor: fl.k, floorCol: fl.c, curtain: fab, doorX: -W / 2 + 3 });
+    shell(R, W, D, { wall: paint ? paint.c : [0xfff1e6, 0xe0f2fe, 0xfdf4ff][lv], trim: fab, floor: fl.k, floorCol: fl.c, curtain: fab, doorX: -W / 2 + 3, noBackWin: (wx) => wx > 0.5 });
     const L = -W / 2, Rr = W / 2;
     put(R, 'bed', L + 1.6, -4.8, 0, { col: fab }); spot(R, 'bed', L + 1.6, -2.9, 'Sleep', 'bed', {}, 1.5); put(R, 'lamp', L + 3.0, -6.2, 0); put(R, 'rug', L + 2, -1.6, 0, { col: 0xc4b5fd, w: 1.6, d: 1 });
     put(R, 'wardrobe', L + 4.5, -6.3, 0); spot(R, 'wardrobe', L + 4.5, -5.1, 'Wardrobe', 'wardrobe', {}, 1.3);
@@ -136,6 +189,7 @@ const LAYOUT = {
     (st.homeDecor || []).forEach((d, i) => { const p = HOME_SLOTS(L, Rr)[i]; if (!p) return; const hi = HOME_ITEMS.find((h) => h.id === d); const map = { plant: 'palm', aquarium: 'aquarium', jukebox: 'jukebox', arcade: 'arcade', statue: 'statue', fountain: 'chocFountain', neon: 'palm', piano: 'piano' };
       if (hi) put(R, hi.prop, p[0], p[1], p[2] == null ? PI : p[2], Object.assign({ col: fab }, hi.o || {})); else put(R, map[d] || 'palm', p[0], p[1], p[2] == null ? PI : p[2]); });
     spot(R, 'decor', 2.5, 5.6, 'Decorate home', 'homeDecor', {}, 1.2);
+    homeDense(R, W, D, L, Rr, fab, paint);
     spot(R, 'exit', R.door.x, D / 2 - 0.4, 'Exit', 'exit', {}, 1.3);
     if (st.pet !== false) { const cr = makeCandy(); const c = cr.root; c.userData.candyRig = cr; c.scale.setScalar(0.55); npc(R, c, 2.2, 0.2, -0.6, 'pet', 'Candy'); spot(R, 'pet', 2.2, 1.1, 'Pet Candy', 'pet', {}, 1.2); }
   },
