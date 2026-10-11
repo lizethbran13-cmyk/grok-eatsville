@@ -48,6 +48,7 @@ function onMsg(d, from) { if (!d || typeof d !== 'object') return; const host = 
     if (d.t === 'look') { R.looks[from] = { name: GN.cleanName(String(d.name || 'Chef')), look: d.look && typeof d.look === 'object' ? d.look : {}, car: String(d.car || 'hatch').slice(0, 12) }; R.room.broadcast({ t: 'looks', l: R.looks }); return; }
     if (d.t === 'me' && Array.isArray(d.p)) { applyPos(remote(from), d.p); return; }
     if (d.t === 'act') { let r = null; if (G.sim && remote(from).w === G.bid) { r = G.sim.act(from, +d.x || 0, +d.z || 0); } R.room.sendTo(from, { t: 'actr', r, id: d.id }); if (r === 'serve' || r === 'fix') R.dirty = true; return; }
+    if (d.t === 'drop') { if (G.sim) delete G.sim.carry[from]; return; }
     if (d.t === 'snowie') { if (G.sim && remote(from).w === G.bid && S.money >= 25 && G.sim.callSnowie()) { if (S.mode !== 'explore') S.money -= 25; EV.push({ t: 'toast', m: '📞 ' + ((R.looks[from] || {}).name || 'A friend') + ' called Snowie! (-$25)' }); R.dirty = true; } return; }
     if (d.t === 'earn') { const v = Math.max(0, Math.min(200, +d.v || 0)); S.money += v; S.stats.earned += v; if (d.what === 'deliv') S.deliveries++; persist(); R.dirty = true; return; }
   } else {
@@ -95,6 +96,7 @@ export const Net = {
   query(x, z) { if (!G.sim) return null; if (R.hostWhere !== G.bid) return { a: 'none', label: '🌐 Work here with your host' }; return G.sim.query(R.room.pid, x, z); },
   act(x, z) { if (R.hostWhere !== G.bid) { C.toast('🌐 Restaurants run live where the host is. Head to ' + (BLD[R.hostWhere] ? BLD[R.hostWhere].name : 'your host') + '!'); return null; } R.room.send({ t: 'act', x: +x.toFixed(2), z: +z.toFixed(2) }); return null; },
   callSnowie() { R.room.send({ t: 'snowie' }); return true; },
+  drop() { if (R.room) R.room.send({ t: 'drop' }); },
   earn(v, what) { if (Net.isClient()) { R.room.send({ t: 'earn', v, what }); return true; } return false; },
   pushState() { if (isHost()) R.dirty = true; },
   where() { R.acc = 1; },

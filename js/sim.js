@@ -87,7 +87,7 @@ export class RestSim {
   // what the action button would do for this player at (x,z) room-local
   query(pid, x, z) {
     const carry = this.carry[pid] || null; const near = (o, r) => Math.hypot(o.x - x, o.z - z) < r;
-    if (carry && carry !== 'burnt' && carry !== 'dirty' && carry !== 'bag') { const c = this.cust.find((c) => c.st === 'wait' && near(c, 1.9) && c.dish === carry); if (c) return { a: 'serve', c, label: 'Serve ' + DISH[carry].e }; }
+    if (carry && carry !== 'burnt' && carry !== 'dirty' && carry !== 'bag' && DISH[carry]) { let c = null, cd = 2.4; for (const k of this.cust) { if (k.st !== 'wait' || k.dish !== carry) continue; const d = Math.hypot(k.x - x, k.z - z); if (d < cd) { cd = d; c = k; } } if (c) return { a: 'serve', c, label: 'Serve ' + DISH[carry].e }; }
     { let bs = null, bd = 1.45; for (const s of Object.values(this.st)) { const d = Math.hypot(s.x - x, s.z - z); if (d < bd) { bd = d; bs = s; } } for (const s of bs ? [bs] : []) {
       if (s.broken) return { a: 'fix', s, label: 'FIX! ' + s.fixN + '/5' };
       if (s.ready && !carry) return { a: 'take', s, label: 'Take ' + (s.ready === 'burnt' ? '🔥' : DISH[s.ready].e) };
@@ -96,15 +96,16 @@ export class RestSim {
     if (carry === 'burnt' || carry === 'dirty' || (carry && carry !== 'bag')) { const tr = this.R.spots.find((p) => p.kind === 'trash'); if (tr && near(tr, 1.4)) return { a: 'toss', label: 'Toss 🗑️' }; }
     const sk = this.R.spots.find((p) => p.kind === 'sink'); if (sk && near(sk, 1.4)) { if (carry === 'dirty') return { a: 'wash', label: 'Wash plate 🫧' }; if (!carry) return { a: 'hands', label: 'Wash hands 🧼' }; }
     if (!carry) { let best = null, bd = 1.4; for (const m of this.mess) { const d = Math.hypot(m.x - x, m.z - z); if (d < bd) { bd = d; best = m; } } if (best) return { a: 'clean', m: best, label: best.kind === 'plate' ? 'Pick up plate' : 'Clean 🧽' }; }
-    if (carry && carry !== 'burnt' && carry !== 'dirty' && carry !== 'bag') { const c = this.cust.find((c) => c.st === 'wait' && near(c, 1.6)); if (c) return { a: 'wrong', label: 'They want ' + DISH[c.dish].e }; }
+    if (carry && carry !== 'burnt' && carry !== 'dirty' && carry !== 'bag') { const c = this.cust.find((c) => c.st === 'wait' && near(c, 2.4)); if (c) return { a: 'wrong', c, label: 'They want ' + DISH[c.dish].e }; }
     return null;
   }
   pickDish(stId) { const want = this.cust.filter((c) => c.st === 'wait' && DISH[c.dish].st === stId).sort((a, b) => b.pat - a.pat).map((c) => c.dish); const busy = this.inFlight();
-    for (const d of want) { if ((busy[d] || 0) > 0) { busy[d]--; continue; } return d; } const m = this.menu().filter((d) => DISH[d].st === stId); return want[0] || m[0] || null; }
+    if (this.delivDish && DISH[this.delivDish] && DISH[this.delivDish].st === stId) want.push(this.delivDish); for (const d of want) { if ((busy[d] || 0) > 0) { busy[d]--; continue; } return d; } const m = this.menu().filter((d) => DISH[d].st === stId); return want[0] || m[0] || null; }
   inFlight() { const n = {}; for (const s of Object.values(this.st)) { const d = s.cook ? s.cook.dish : s.ready; if (d && d !== 'burnt') n[d] = (n[d] || 0) + 1; } for (const k in this.carry) { const d = this.carry[k]; if (DISH[d]) n[d] = (n[d] || 0) + 1; } for (const f of this.staff) if (DISH[f.carry]) n[f.carry] = (n[f.carry] || 0) + 1; return n; }
   act(pid, x, z) {
     const q = this.query(pid, x, z); if (!q) return null; const a = q.a;
     if (a === 'serve') { this.carry[pid] = null; this.serve(q.c); return 'serve'; }
+    if (a === 'wrong') return 'deny';
     if (a === 'fix') { q.s.fixN++; if (q.s.fixN >= 5) this.fix(q.s); return 'fix'; }
     if (a === 'take') { this.carry[pid] = q.s.ready; q.s.ready = null; return 'take'; }
     if (a === 'cook') { if (!this.rival && this.br.stock <= 0) { if (this.br.autoStock && S.money >= 75) { S.money -= 75; this.br.stock += 30; EV.push({ t: 'toast', m: '📦 Auto-ordered 30 ingredients ($75)' }); } else { EV.push({ t: 'toast', m: '📦 Out of ingredients! Buy some at FreshMart', bad: true }); return 'deny'; } }

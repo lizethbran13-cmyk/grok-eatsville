@@ -133,7 +133,7 @@ function enterBuilding(bid) {
       if (Net.isClient()) G.sim = Net.clientSim(bid, br, G.room); } }
   G.vis = { cust: new Map(), staff: new Map(), mess: new Map(), st: {} };
   playMusic(b.kind === 'rest' ? 'kitchen' : b.kind === 'home' ? 'living' : b.kind === 'ratita' ? 'hq' : 'garden');
-  if (b.kind === 'rest' && !S.seen['tip_' + (branchFor(bid).rival ? 'r' : 'o')]) { S.seen['tip_' + (branchFor(bid).rival ? 'r' : 'o')] = 1; const br = branchFor(bid); setTimeout(() => br.rival ? banner('🍔 ' + br.name, S.mode === 'worker' ? 'Talk to Manager Mo (right side) to clock in' : 'This is the competition. Look around!') : br.vacant ? null : banner('🏪 Your restaurant!', 'Customers show what they want. Cook it at the machine, take it, serve it!'), 400); }
+  if (b.kind === 'rest' && !S.seen['tip_' + (branchFor(bid).rival ? 'r' : 'o')]) { S.seen['tip_' + (branchFor(bid).rival ? 'r' : 'o')] = 1; const br = branchFor(bid); setTimeout(() => br.rival ? banner('🍔 ' + br.name, S.mode === 'worker' ? 'Talk to Manager Mo (right side) to clock in' : 'This is the competition. Look around!') : br.vacant ? null : banner('🏪 Your restaurant!', 'Cook → pick up → walk to the customer → tap Serve'), 400); }
   Net.where && Net.where();
 }
 function leaveRoom(toTown) {
@@ -145,7 +145,7 @@ function leaveRoom(toTown) {
 }
 function disposeRoom(R) { R.grp.traverse((o) => { if (o.isMesh && o.geometry && !o.userData.shared) o.geometry.dispose(); }); }
 function disposeModel(m) { m.traverse((o) => { if (o.isMesh && o.geometry && !o.userData.shared) o.geometry.dispose(); }); }
-function exitBuilding() { const bid = G.bid; sfx('door'); leaveRoom(true); G.bid = null; placeOutside(bid); playMusic('kitchen'); Net.where && Net.where(); }
+function exitBuilding() { const bid = G.bid; if (G.deliv && !G.deliv.bag && P.carry && P.carry === G.deliv.dish) bagIt(true); sfx('door'); leaveRoom(true); G.bid = null; placeOutside(bid); playMusic('kitchen'); Net.where && Net.where(); }
 function rebuildRoom() { if (G.where !== 'room') return; const bid = G.bid, px = P.x, pz = P.z; const sim = G.sim; E.scene.remove(G.room.grp); disposeRoom(G.room);
   G.room = buildInterior(bid, { branch: branchFor, state: S }); E.scene.add(G.room.grp);
   if (sim) { const br = branchFor(bid); const ns = new RestSim(bid, br, G.room, { career: sim.career }); ns.cust = sim.cust.filter((c) => ns.seats[c.seat]); for (const c of ns.cust) ns.seats[c.seat].cust = c.id; for (const k in sim.st) if (ns.st[k]) Object.assign(ns.st[k], { cook: sim.st[k].cook, ready: sim.st[k].ready, broken: sim.st[k].broken }); ns.mess = sim.mess; ns.carry = sim.carry; ns.clean = sim.clean; ns.insp = sim.insp; ns.t = sim.t; if (br.rival) ns.staff = sim.staff; G.sim = ns;
@@ -155,21 +155,26 @@ function rebuildRoom() { if (G.where !== 'room') return; const bid = G.bid, px =
 function nearestDoor() { let best = null, bd = 2.4; for (const d of T.doors) { const dd = Math.hypot(d.x - P.x, d.z - P.z); if (dd < bd) { bd = dd; best = d; } } return best; }
 function roomSpot() { if (!G.room) return null; const lx = P.x - IX, lz = P.z; let best = null, bd = 9; for (const s of G.room.spots) { const d = Math.hypot(s.x - lx, s.z - lz); if (d < s.r && d < bd) { bd = d; best = s; } } return best; }
 function currentAction() {
-  if (G.where === 'town') { if (G.driving) return null; const d = nearestDoor(); if (d) return { label: 'Enter ' + titleCase(d.name), a: 'enter', d }; return null; }
+  if (G.where === 'town') { if (G.driving) return null; const d = nearestDoor(); if (d && G.deliv && d.bid === G.deliv.house && hasDelivery()) return { label: 'Hand over 🛍️', a: 'deliver', d }; if (d) return { label: 'Enter ' + titleCase(d.name), a: 'enter', d }; return null; }
   const lx = P.x - IX, lz = P.z;
   if (G.sim || (Net.isClient() && G.room.kind === 'rest')) { const br = branchFor(G.bid); const canWork = !br.rival || (S.career.shift);
-    if (canWork && G.sim) { if (G.deliv && P.carry === G.deliv.dish && !G.deliv.bag && branchKey(G.bid) === G.deliv.key && Math.hypot(lx - 5, lz - (REST.counterZ + 0.9)) < 1.5) return { label: 'Bag delivery 🛍️', a: 'bag' };
-      const q = Net.isClient() ? Net.query(lx, lz) : G.sim.query(Net.pid(), lx, lz); if (q && q.a !== 'none') return { label: q.label, a: 'sim', q }; if (q && q.a === 'none') { const s = roomSpot(); if (!s) return { label: q.label, a: 'noop' }; } } }
-  const s = roomSpot(); if (s) { if (s.kind === 'family' && P.carry === 'bag' && G.deliv && G.deliv.house === G.bid) return { label: 'Deliver food 🛍️', a: 'deliver' }; return { label: s.label, a: 'spot', s }; }
+    if (canWork && G.sim) { const q = Net.isClient() ? Net.query(lx, lz) : G.sim.query(Net.pid(), lx, lz); if (q && q.a === 'serve') return { label: q.label, a: 'sim', q };
+      if (G.deliv && P.carry === G.deliv.dish && !G.deliv.bag && branchKey(G.bid) === G.deliv.key && Math.hypot(lx - 5, lz - REST.counterZ) < 2.2) return { label: 'Bag delivery 🛍️', a: 'bag' };
+      if (q && q.a !== 'none') return { label: q.label, a: 'sim', q }; if (q && q.a === 'none') { const s = roomSpot(); if (!s) return { label: q.label, a: 'noop' }; } } }
+  if (G.deliv && G.deliv.house === G.bid && hasDelivery()) { const f = G.room.spots.find((p) => p.kind === 'family'); if (f && Math.hypot(f.x - lx, f.z - lz) < 2.6) return { label: 'Hand over 🛍️', a: 'deliver' }; }
+  const s = roomSpot(); if (s) return { label: s.label, a: 'spot', s };
   return null;
 }
+function hasDelivery() { return !!G.deliv && (P.carry === 'bag' || (P.carry && P.carry === G.deliv.dish)); }
+function bagIt(auto) { P.carry = 'bag'; G.deliv.bag = true; if (G.sim) { G.sim.carry[Net.pid()] = null; if (Net.isClient()) Net.drop && Net.drop(); } sfx('pop'); toast((auto ? '🛍️ Auto-bagged! ' : '🛍️ Bagged! ') + 'Follow the pink arrow to ' + BLD[G.deliv.house].name); if (!S.seen.tipDeliv) { S.seen.tipDeliv = 1; setTimeout(() => banner('🛵 Delivery tip', 'Drive to the pink arrow → walk to the door → tap Hand over 🛍️'), 900); } }
 const titleCase = (s) => s.split(' ').map((w) => w[0] + w.slice(1).toLowerCase()).join(' ');
 function doAction(A) {
   if (!A) return; const lx = P.x - IX, lz = P.z;
   if (A.a === 'enter') { if (G.driving) return; enterBuilding(A.d.bid); return; }
   if (A.a === 'exitCar') { exitCar(); return; }
-  if (A.a === 'bag') { P.carry = 'bag'; G.deliv.bag = true; sfx('pop'); toast('🛍️ Bagged! Drive it to ' + BLD[G.deliv.house].name); return; }
-  if (A.a === 'deliver') { const mins = S.time - G.deliv.t0; const tip = Math.round((15 + Math.max(0, 60 - mins * 0.5)) * ((CAR[S.car] || {}).deliv || 1)); const base = DISH[G.deliv.dish].price; if (!Net.earn(base + tip, 'deliv')) { S.money += base + tip; S.stats.earned += base + tip; S.deliveries++; } P.carry = null; G.deliv = null; sfx('buy'); burst('confetti', P.x, 1.5, P.z); floatText('+$' + (base + tip), P.x, 2.2, P.z, 'cash'); toast('🛵 Delivered! +$' + (base + tip) + ' (tip $' + tip + ')'); persist(); return; }
+  if (A.a === 'bag') { bagIt(false); return; }
+  if (A.a === 'deliver') { const mins = S.time - G.deliv.t0; const tip = Math.round((15 + Math.max(0, 60 - mins * 0.5)) * ((CAR[S.car] || {}).deliv || 1)); const base = DISH[G.deliv.dish].price; if (!Net.earn(base + tip, 'deliv')) { S.money += base + tip; S.stats.earned += base + tip; S.deliveries++; } P.carry = null; G.deliv = null; sfx('buy'); burst('confetti', P.x, 1.5, P.z); floatText('+$' + (base + tip), P.x, 2.2, P.z, 'cash'); toast('🛵 Delivered! +$' + (base + tip) + ' (tip $' + tip + ')'); banner('🛍️ Order handed over!', '+$' + (base + tip) + ' · tip $' + tip); persist(); return; }
+  if (A.a === 'sim' && A.q && A.q.a === 'wrong') { sfx('deny'); toast('🤔 Not that one! ' + A.q.label + (A.q.c && DISH[A.q.c.dish] ? ' ' + DISH[A.q.c.dish].n : ''), true); return; }
   if (A.a === 'sim') { const r = Net.isClient() ? Net.act(lx, lz) : G.sim.act(Net.pid(), lx, lz); afterSim(r, A.q); return; }
   if (A.a === 'spot') spotAction(A.s);
 }
@@ -309,7 +314,7 @@ function frame(dt) {
   // movement
   if (G.where === 'town') stepTown(dt, mv); else stepRoom(dt, mv);
   // sim
-  if (G.sim) { if (!Net.isClient()) { G.sim.step(dt); if (G.sim.br && !G.sim.rival && G.sim.br.owned) { const target = clamp(100 - G.sim.mess.length * 6 - Object.values(G.sim.st).filter((s) => s.broken).length * 8, 0, 100); G.sim.br.sanitation += (target - G.sim.br.sanitation) * Math.min(1, dt * 0.05); } } else G.sim.smooth(dt); syncSim(dt); P.carry = G.sim.carry[Net.pid()] || (P.carry === 'bag' ? 'bag' : null); }
+  if (G.sim) { G.sim.delivDish = G.deliv && !G.deliv.bag && G.deliv.key === branchKey(G.bid) ? G.deliv.dish : null; if (!Net.isClient()) { G.sim.step(dt); if (G.sim.br && !G.sim.rival && G.sim.br.owned) { const target = clamp(100 - G.sim.mess.length * 6 - Object.values(G.sim.st).filter((s) => s.broken).length * 8, 0, 100); G.sim.br.sanitation += (target - G.sim.br.sanitation) * Math.min(1, dt * 0.05); } } else G.sim.smooth(dt); syncSim(dt); P.carry = P.carry === 'bag' && G.deliv && G.deliv.bag ? 'bag' : (G.sim.carry[Net.pid()] || null); if (P.carry && DISH[P.carry] && !S.seen.tipServe) { S.seen.tipServe = 1; toast('👉 Walk to the customer with the ' + DISH[P.carry].e + ' bubble and tap Serve'); } }
   setCarryModel(); drainEvents(); Net.tick && Net.tick(dt);
   // visuals
   stepFx(dt); stepFloats(dt, E.camera, E.w, E.h); hud(); MATS.n.emissiveIntensity = G.where === 'town' && phase() !== 'day' ? (phase() === 'night' ? 1.4 : 0.6) : 0.15;
@@ -330,7 +335,7 @@ function stepTown(dt, mv) {
   if (G.snapCam) { cam.position.set(cx, h + 1.2, cz); G.snapCam = false; } cam.lookAt(tx, 1.6, tz); cam.fov = E.baseFov; cam.updateProjectionMatrix();
   followShadow(tx, 0, tz);
   // delivery / nav arrow
-  const tgt = G.deliv && G.deliv.bag ? G.deliv.house : null; G.arrow.visible = !!tgt; if (tgt) { const d = T.doors.find((x) => x.bid === tgt); G.arrow.position.set(d.x, 5 + Math.sin(G.t * 3) * 0.4, d.z); G.arrow.rotation.y = G.t * 2; }
+  const tgt = G.deliv && G.deliv.bag ? G.deliv.house : null; G.arrow.visible = !!tgt; if (tgt) { if (G.where === 'room' && G.bid === tgt && G.room) { const f = G.room.spots.find((p) => p.kind === 'family'); G.arrow.position.set(IX + (f ? f.x : 0), 3.4 + Math.sin(G.t * 3) * 0.25, f ? f.z : 0); G.arrow.scale.setScalar(0.55); } else if (G.where === 'town') { const d = T.doors.find((x) => x.bid === tgt); G.arrow.position.set(d.x, 4.2 + Math.sin(G.t * 3) * 0.4, d.z); G.arrow.scale.setScalar(1); const dd = Math.hypot(d.x - P.x, d.z - P.z); if (dd < 9 && !G.deliv.near) { G.deliv.near = true; toast('🏠 This is the place! Hop out, walk to the door and tap Hand over 🛍️'); } } else G.arrow.visible = false; G.arrow.rotation.y = G.t * 2; }
 }
 const onWalk = (x, z) => { // standing on a raised sidewalk / plaza?
   for (const c of [-90, -30, 30, 90]) { if (Math.abs(x - c) < 6 || Math.abs(z - c) < 6) return 0; } return Math.abs(x) < 96 && Math.abs(z) < 96 ? 1 : 0; };
