@@ -1,7 +1,8 @@
 // Online Order Mode DLC (Issue #85): Tortuga Eats / Ratita Rush app orders, curbside pickup + same-day delivery, 5 pet crew, real consequences + never-stuck reboot.
 import { DLC_ONLINE_KEY, ONLINE_PETS } from './data.js';
 import { DISH } from './food.js';
-export function hasOnlineDLC() { try { return localStorage.getItem(DLC_ONLINE_KEY) === '1' || localStorage.getItem(DLC_ONLINE_KEY) === 'true'; } catch (e) { return false; } }
+// Owned when the Grok Arcade DLC Shop wrote its purchase record (JSON) or a legacy '1'/'true' flag; never on '0'/'false'/empty.
+export function hasOnlineDLC() { try { const v = localStorage.getItem(DLC_ONLINE_KEY); return v != null && v !== '' && v !== '0' && v !== 'false' && v !== 'null'; } catch (e) { return false; } }
 const NAMES = ['Ava', 'Mateo', 'Priya', 'Leo', 'Zoe', 'Omar', 'Mia', 'Kai', 'Lucia', 'Ben', 'Nora', 'Theo'];
 const HOUSES = ['THE PATELS', 'THE NGUYENS', 'THE GARCIAS', 'BEACH HOUSE', 'TOWN HALL', 'GAZETTE'];
 const VEH = { scooter: { n: '🛵 Ratita Rush Scooter', spd: 1.25, keep: 0.82 }, delivcar: { n: '🚗 Tortuga Thermal Cruiser', spd: 1.0, keep: 0.62 } };
