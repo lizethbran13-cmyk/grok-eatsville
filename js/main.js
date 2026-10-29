@@ -19,6 +19,7 @@ import { RestSim } from './sim.js';
 import { ROADS as ROADS_ } from './data.js';
 import { BLD, BUILDINGS, OUTFITS, CAR, CAREER, LOTS, RIVALS } from './data.js';
 import * as U from './ui.js';
+import * as ON from './online.js';
 import { Net } from './net.js';
 import { MB, toGroup, XB } from './kit.js';
 import { P as GP } from './geo.js';
@@ -180,11 +181,33 @@ function doAction(A) {
 }
 function afterSim(r, q) { if (!r) return; if (r === 'fix' && !q) { sfx('hit'); burst('sparkle', P.x, 1.2, P.z, 4); return; } const s = { serve: 'heart', cook: 'click', take: 'pop', fix: 'hit', clean: 'splat', toss: 'land', wash: 'splash', hands: 'splash', deny: 'deny' }[r]; if (s) sfx(s);
   if (r === 'serve') burst('heart', P.x, 1.6, P.z); if (r === 'clean' || r === 'wash' || r === 'hands') burst('clean', P.x, 0.6, P.z); if (r === 'fix') burst('sparkle', IX + q.s.x, 1.2, q.s.z, 4); }
+function onlineBr() { const bid = G.where === 'room' && G.room && G.room.kind === 'rest' ? G.bid : 'lotA'; return { bld: BLD[bid] || BLD.lotA, br: S.branches && (S.branches[branchKey(bid)] || Object.values(S.branches)[0]) }; }
+let onTab = 'queue', onRefresh = 0;
+function openOnline(tab) { if (!ON.hasOnlineDLC()) return; onTab = tab || onTab; const { bld, br } = onlineBr(); const vk = ON.vehFor(bld);
+  U.panel('📱 ONLINE ORDER HQ', ON.hubHTML(S, onTab, vk), (a, v) => { const o = ON.ensure(S); const ord = o.orders.find((x) => x.id === +v);
+    if (a === 'tab') onTab = v;
+    else if (a === 'prep' && ord) { ord.stage = 'prep'; toast('🐭 Luna routes #' + ord.id + ' to the kitchen!'); }
+    else if (a === 'seal' && ord) { ord.stage = 'sealed'; sfx('pop'); toast('🔥 Sealed in the Tortuga thermal bag — Torty approves!'); }
+    else if (a === 'go' && ord) { ord.stage = 'route'; sfx('click'); toast('🏴‍☠️ Pi-rat revs the ' + (ON.vehFor(bld) === 'scooter' ? 'scooter' : 'cruiser') + '! Hurry before it gets cold!'); }
+    else if (a === 'pickup' && ord) { const r = ON.finish(S, ord); if (r.good) { S.money += 8; } ord.stage = 'done'; o.orders = o.orders.filter((x) => x.stage !== 'done'); banner(r.good ? '🐶 Candy Bark-and-Drop!' : '🥶 Cold pickup!', r.msg + (r.good ? ' +$8 Good-Girl tip' : ''), !r.good); }
+    else if (a === 'tune') { if (ON.tuneUp(S)) { toast('🔧 Pro Tune-Up done! −$40'); sfx('buy'); } else toast('Not enough cash — use the FREE reboot!', true); }
+    else if (a === 'free') { ON.freeReboot(S); sfx('buy'); banner('🐶🐢 FREE Emergency Reboot!', 'Candy & Torty restored your rating, bag & tablet — never stuck!'); }
+    else if (a === 'test') { const t = ON.spawn(S, br && br.menu) || ON.ensure(S).orders[0]; if (t) { const r = ON.consequence(S, t, 'cold'); ON.ensure(S).orders = ON.ensure(S).orders.filter((x) => x.stage !== 'done'); banner('🥶 Cold order!', r.msg, true); } }
+    persist(); openOnline(onTab); }, { cls: 'onlineHub' }); }
+function stepOnline(dt) { const on = ON.hasOnlineDLC() && G.state === 'play'; const b = $('bOnline'); if (b) b.classList.toggle('hidden', !on); if (!on || !S) return;
+  const { bld, br } = onlineBr(); const evs = ON.step(S, dt * MIN_PER_SEC, br && br.menu, ON.vehFor(bld));
+  for (const r of evs) { banner(r.good ? '🛵 Delivered!' : '🥶 Late & cold!', r.msg, !r.good); persist(); }
+  const o = ON.ensure(S); if (b) { b.textContent = '📱 Online' + (o.orders.length ? ' (' + o.orders.length + ')' : ''); b.classList.toggle('alert', o.orders.some((x) => x.stage === 'new' || x.stage === 'ready')); }
+  if (edge('online')) { if (U.UI.open) U.close(); else openOnline('queue'); }
+  onRefresh -= dt; if (U.UI.open && document.querySelector('.onlineHub') && onTab === 'queue' && onRefresh <= 0) { onRefresh = 1; openOnline(onTab); } }
+window.__ON = { ON, open: (t) => openOnline(t), get S() { return S; } };
 function spotAction(s) {
   if (Net.isClient() && ['office', 'buyLot', 'bank', 'mayor', 'hire', 'stock', 'ratitaShop', 'carShop', 'homeDecor', 'fines', 'quiz', 'bed', 'garage'].includes(s.kind)) { toast('🌐 Your host runs the company. Ask them to do that!'); return; }
   const br = G.room.kind === 'rest' ? branchFor(G.bid) : null; const key = br && branchKey(G.bid);
   switch (s.kind) {
     case 'exit': exitBuilding(); break;
+    case 'onlineOrder': case 'curbside': openOnline(s.kind === 'curbside' ? 'queue' : 'queue'); break;
+    case 'onlinePet': openOnline('pets'); break;
     case 'office': if (br.rival) { U.bossTalk(C, br); } else U.office(C, key); break;
     case 'boss': U.bossTalk(C, br); break;
     case 'buyLot': U.buyLotPanel(C, BLD[G.bid].lot); break;
@@ -297,6 +320,7 @@ function frame(dt) {
   if (!Net.isClient()) clock(dt); else if (Net.stateTime != null) S.time = Net.stateTime;
   // input
   if (edge('menu')) U.UI.open ? U.close() : U.pauseMenu(C);
+  stepOnline(dt);
   const mv = U.UI.open ? { x: 0, y: 0 } : readMove(); const A = U.UI.open ? null : currentAction();
   { // target ring under whatever the action button will use
     if (!G.ring) { G.ring = new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.07, 10, 40), new THREE.MeshBasicMaterial({ color: 0xffe14d, transparent: true, opacity: 0.85, depthWrite: false })); G.ring.rotation.x = -PI / 2; E.scene.add(G.ring); }

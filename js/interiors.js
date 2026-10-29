@@ -11,6 +11,7 @@ import { BLD, THEMES, DECOR , HOME_PAINT, HOME_FLOOR, HOME_FAB, HOME_ITEMS } fro
 import { STATIONS, DISH } from './food.js';
 import { makePerson } from './people.js';
 import { makeRat, makeMartina, makeCandy } from './ratmodels.js';
+import { hasOnlineDLC } from './online.js';
 const PI = Math.PI;
 export const IX = 1000;
 const floorMats = {};
@@ -157,6 +158,16 @@ function restaurant(R, br) {
     // decor slots
     (br.decor || []).forEach((d, i) => { const p = REST.decor[i]; if (!p) return; const map = { plant: 'palm', aquarium: 'aquarium', jukebox: 'jukebox', arcade: 'arcade', statue: 'statue', fountain: 'chocFountain', neon: 'neon', piano: 'piano' }; const nm = map[d]; if (!nm) return;
       if (nm === 'neon') wallProp(R, 'neon', p[1], 2.6, p[0] < 0 ? 'l' : 'r'); else put(R, nm, p[0], p[1], p[0] < -5 ? PI / 2 : p[0] > 5 ? -PI / 2 : PI); });
+    if (hasOnlineDLC() && !brand) { // Online Order Mode DLC
+      put(R, 'onlineDispatch', 8.6, -1.0, 0); spot(R, 'onlineOrder', 8.6, 0.2, '📱 Online Dispatch', 'onlineOrder', {}, 1.4);
+      put(R, 'curbsideShelf', -9.9, 3.0, PI / 2); spot(R, 'curbside', -8.7, 3.0, '🛍️ Curbside Pickup', 'curbside', {}, 1.3);
+      const lu = ratNPC('luna'); lu.scale.setScalar(1.7); npc(R, lu, 10.3, -0.4, -PI / 2, 'rat', 'Luna');
+      const pi = ratNPC('pirat'); pi.scale.setScalar(1.7); npc(R, pi, 9.9, 2.9, -PI * 0.75, 'rat', 'Pi-rat');
+      const sn = ratNPC('snowie'); sn.scale.setScalar(1.7); npc(R, sn, 10.3, 1.2, -PI / 2, 'rat', 'Snowie');
+      const cr = makeCandy(); cr.root.userData.candyRig = cr; cr.root.scale.setScalar(0.55); npc(R, cr.root, -8.4, 4.6, PI / 2, 'pet', 'Candy');
+      const mt = makeMartina(); mt.root.userData.mart = mt; mt.root.scale.setScalar(0.38); npc(R, mt.root, -8.4, 1.4, PI / 2, 'idle', 'Torty');
+      spot(R, 'onlinePet', 8.9, 2.3, '🐾 Pet crew', 'onlinePet', {}, 1.0);
+    }
     spot(R, 'exit', REST.doorX, D / 2 - 0.4, 'Exit', 'exit', {}, 1.3);
     if (brand && brand.boss) { const m = person(NPCLOOK[brand.boss]); npc(R, m, 8.2, 1.8, -PI / 2, 'idle', brand.bossName); spot(R, 'boss', 7.2, 1.8, 'Talk to ' + brand.bossName, 'boss', {}, 1.4); }
   } else {

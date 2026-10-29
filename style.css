@@ -75,3 +75,23 @@ h3{margin:12px 2px 6px;font-size:12px;letter-spacing:2px;opacity:.9;font-weight:
 .pRow{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.18);border-radius:12px;padding:8px;margin:5px 0}.pRow b{flex:1;text-align:left}.pRow .swc{width:18px;height:18px;border-radius:50%;border:2px solid #fff}
 .ptag{background:rgba(15,23,42,.75);color:#fff;font-weight:900;font-size:13px;padding:2px 8px;border-radius:999px;white-space:nowrap;position:absolute;left:0;top:0;pointer-events:none}
 .seg button.swb{color:#fff;text-shadow:0 1px 2px #000;min-height:36px;border:3px solid rgba(255,255,255,.5)}.seg button.swb.on{border-color:#fff}.dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:5px;vertical-align:-1px;border:2px solid rgba(0,0,0,.2)}
+
+#bOnline{pointer-events:auto;font:900 15px/1 system-ui,sans-serif;background:linear-gradient(180deg,#ff6b00,#e11d48);color:#fff;border:3px solid #fff;border-radius:999px;padding:8px 14px;box-shadow:0 4px 0 rgba(0,0,0,.22);cursor:pointer}
+#bOnline.alert{animation:pulse 1s infinite}
+.onCard{background:#fff7ed;border:2px solid #fed7aa;border-radius:16px;padding:10px 12px;margin:7px 0}
+.onCard.pickup{background:#f0fdf4;border-color:#bbf7d0}
+.onCard.cold{background:#fef2f2;border-color:#fecaca}
+.onTop{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:4px}
+.appTag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:900;color:#fff;background:#ea580c}
+.appTag.rush{background:#db2777}
+.appTag.pick{background:#16a34a}
+.tempBar{height:10px;background:#e2e8f0;border-radius:999px;overflow:hidden;margin:5px 0;border:1px solid #cbd5e1}
+.tempBar>i{display:block;height:100%;transition:width .25s}
+.petGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin:6px 0}
+.petCard{background:#f5f3ff;border:2px solid #ddd6fe;border-radius:14px;padding:8px 10px;font-size:13px}
+.petCard b{display:block;font-size:14px;color:#4c1d95}
+.conseqBox{background:#fef2f2;border:2px solid #fca5a5;border-radius:16px;padding:10px 12px;margin:8px 0}
+.freeRebootBtn{width:100%;padding:13px;margin:6px 0;font:900 15px/1.15 system-ui,sans-serif;border-radius:16px;border:3px solid #15803d;background:linear-gradient(180deg,#4ade80,#16a34a);color:#052e16;box-shadow:0 5px 0 #15803d;cursor:pointer}
+.onCard,.petCard,.conseqBox{color:#1f2937;text-shadow:none}
+.onCard .sub,.petCard .sub,.conseqBox .sub{color:#475569}
+.onlineHub{max-height:92vh;overflow-y:auto}

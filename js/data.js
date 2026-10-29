@@ -74,3 +74,13 @@ export const HOME_FLOOR = [{ id: 'wood', n: 'Wood', k: 'wood', c: 0x8b5cf6 }, { 
 export const HOME_FAB = [0x8b5cf6, 0x3b82f6, 0x10b981, 0xf97316, 0xef4444, 0xec4899, 0xfacc15, 0x475569];
 export const HOME_ITEMS = [{ id: 'books', n: 'Bookcase', price: 60, prop: 'shelf', o: { w: 1.6, h: 1.8, items: 'books' } }, { id: 'lamp', n: 'Cozy Lamp', price: 30, prop: 'lamp' }, { id: 'sofa2', n: 'Comfy Sofa', price: 90, prop: 'sofa' },
   { id: 'trophyCase', n: 'Trophy Stand', price: 70, prop: 'podium' }, { id: 'robot', n: 'Ratita Helper Bot', price: 260, prop: 'robot' }, { id: 'cake', n: 'Cake Stand', price: 25, prop: 'cakeDome', o: { y: 0.01 } }];
+
+export const DLC_ONLINE_KEY = 'grokDLC.eatsville.add_a_new_online_order_mode';
+
+export const ONLINE_PETS = [
+  { id: 'luna', name: 'Luna', icon: '🐭', species: 'Grey Fancy Rat', role: 'Online Order Logistics Chief', perk: 'Auto-sorts Tortuga Eats & Ratita Rush queues (+15% prep speed)', bonusTip: 0.15 },
+  { id: 'pirat', name: 'Pi-rat', icon: '🏴‍☠️', species: 'One-Eyed Brown Pirate Rat', role: 'Express Moped Courier Captain', perk: 'Unlocks Pirate Shortcut & +25% Hot-Drop Tip multiplier', bonusTip: 0.25 },
+  { id: 'snowie', name: 'Snowie', icon: '🐁', species: 'Pure White Fancy Rat', role: 'Cold-Chain & Frost-Pack Specialist', perk: 'Slows food cooling & milkshake melt by 35% in transit', tempShield: 0.35 },
+  { id: 'candy', name: 'Candy', icon: '🐶', species: 'Miniature Schnauzer', role: 'VIP Bark-And-Drop Curbside Runner', perk: 'Instant Curbside Pickup handoff + $8 Good-Girl Tip bonus', pickupBonus: 8 },
+  { id: 'torty', name: 'Torty (Martina)', icon: '🐢', species: 'Desert Tortoise', role: 'Tortuga Armored Thermal-Box Inspector', perk: 'Blocks spill damage on road bumps & runs Free Emergency Reboot', armor: true },
+];
